@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateVersionTable extends Migration
+class CreateVersionablesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,12 +14,11 @@ class CreateVersionTable extends Migration
      */
     public function up()
     {
-        Schema::create(
-            'versionables',
+        Schema::create('versionables',
             function (Blueprint $table) {
                 $table->id();
                 $table->morphs('versionable');
-                $table->bigIncrements('version_id');
+                $table->unsignedBigInteger('version_id')->index();
                 $table->json('meta');
                 $table->timestamps();
 

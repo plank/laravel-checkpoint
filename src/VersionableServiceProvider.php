@@ -16,12 +16,12 @@ class VersionableServiceProvider extends ServiceProvider
          */
         // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'versionable');
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'versionable');
-        // $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/config.php' => config_path('versionable.php'),
+                __DIR__.'/../config/versionable.php' => config_path('versionable.php'),
             ], 'config');
 
             // Publishing the views.
@@ -42,6 +42,17 @@ class VersionableServiceProvider extends ServiceProvider
             // Registering package commands.
             // $this->commands([]);
         }
+
+
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+/*        if (empty(File::glob(database_path('migrations/*_create_versions_table.php')))) {
+            $timestamp = date('Y_m_d_His');
+            $migration = database_path("migrations/{$timestamp}_create_versions_table.php");
+
+            $this->publishes([
+                __DIR__.'/../database/migrations/create_versions_table.php.stub' => $migration,
+            ], 'migrations');
+        }*/
     }
 
     /**
@@ -50,11 +61,6 @@ class VersionableServiceProvider extends ServiceProvider
     public function register()
     {
         // Automatically apply the package configuration
-        $this->mergeConfigFrom(__DIR__.'/../config/config.php', 'versionable');
-
-        // Register the main class to use with the facade
-        $this->app->singleton('versionable', function () {
-            return new Versionable;
-        });
+        $this->mergeConfigFrom(__DIR__.'/../config/versionable.php', 'versionable');
     }
 }
