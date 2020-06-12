@@ -1,11 +1,11 @@
 {
-    "name": "plank/versionable",
+    "name": "plank/laravel-versionable",
     "description": "A package for establishing a polymorphic many to many relationship between a model and a versions table",
     "keywords": [
         "plank",
         "versionable"
     ],
-    "homepage": "https://github.com/plank/versionable",
+    "homepage": "https://github.com/plank/laravel-versionable",
     "license": "MIT",
     "type": "library",
     "authors": [
