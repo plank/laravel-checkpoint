@@ -2,6 +2,7 @@
 namespace Plank\Versionable\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Version extends Model
 {
@@ -55,13 +56,18 @@ class Version extends Model
      */
     protected $hidden = [];
 
-    /*
-     * @return \Illuminate\Database\Eloquent\Relations\Morph
-     *
-    public function versionables() {
-
+    /**
+     * Retrieve all associated models of given class.
+     * @param  string $class FQCN
+     * @return MorphToMany
+     */
+    public function models(string $class): MorphToMany
+    {
+        return $this
+            ->morphedByMany($class, 'versionables')
+            ->withPivot('meta');
     }
-    */
+
 
 
 }

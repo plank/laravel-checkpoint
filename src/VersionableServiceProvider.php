@@ -2,6 +2,7 @@
 
 namespace Plank\Versionable;
 
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 
 class VersionableServiceProvider extends ServiceProvider
@@ -11,6 +12,10 @@ class VersionableServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        Relation::morphMap([
+            // something something auto discovery
+        ]);
+
         /*
          * Optional methods to load your package assets
          */
