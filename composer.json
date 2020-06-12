@@ -1,0 +1,59 @@
+{
+    "name": "plank/versionable",
+    "description": "A package for establishing a polymorphic many to many relationship between a model and a versions table",
+    "keywords": [
+        "plank",
+        "versionable"
+    ],
+    "homepage": "https://github.com/plank/versionable",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Massimo Triassi",
+            "email": "massimo@plankdesign.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Andrew Hanichkovsky",
+            "email": "andrew@plankdesign.com,",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.1",
+        "illuminate/support": "5.8.*|^6.0|^7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plank\\Versionable\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Plank\\Versionable\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Plank\\Versionable\\VersionableServiceProvider"
+            ],
+            "aliases": {
+                "Versionable": "Plank\\Versionable\\VersionableFacade"
+            }
+        }
+    }
+}
