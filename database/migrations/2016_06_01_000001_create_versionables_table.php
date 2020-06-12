@@ -20,7 +20,7 @@ class CreateVersionablesTable extends Migration
                 $table->morphs('versionable');
                 $table->unsignedBigInteger('previous_version_id')->nullable();
                 $table->unsignedBigInteger('version_id')->index();
-                $table->json('meta');
+                $table->json('meta')->nullable();
                 $table->timestamps();
 
                 $table->foreign('version_id')

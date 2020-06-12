@@ -47,14 +47,7 @@ class Version extends Model
      *
      * @var array
      */
-    protected $guarded = ['*'];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
-     */
-    protected $hidden = [];
+    protected $guarded = ['id'];
 
     /**
      * Retrieve all associated models of given class.
@@ -63,11 +56,8 @@ class Version extends Model
      */
     public function models(string $class): MorphToMany
     {
-        return $this
-            ->morphedByMany($class, 'versionables')
-            ->withPivot('meta');
+        return $this->morphedByMany($class, 'versionable')
+            ->withPivot('meta')
+            ->withTimestamps();
     }
-
-
-
 }
