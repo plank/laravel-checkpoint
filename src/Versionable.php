@@ -2,7 +2,7 @@
 
 namespace Plank\Versionable;
 
-class Versionable
+trait Versionable
 {
-    // Build your next great package.
+
 }
