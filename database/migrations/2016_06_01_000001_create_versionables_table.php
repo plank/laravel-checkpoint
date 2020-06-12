@@ -18,6 +18,7 @@ class CreateVersionablesTable extends Migration
             function (Blueprint $table) {
                 $table->id();
                 $table->morphs('versionable');
+                $table->unsignedBigInteger('previous_version_id')->nullable();
                 $table->unsignedBigInteger('version_id')->index();
                 $table->json('meta');
                 $table->timestamps();
