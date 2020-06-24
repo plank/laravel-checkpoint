@@ -61,7 +61,13 @@ trait Versionable
      */
     public function createNewVersion()
     {
-        // duplicate original, attach to version?
+        $version = $this->replicate();
+        // duplicate relationships as well - somehow...
+        foreach ($this->getRelations() as $relation => $item) {
+            $version->setRelation($relation, $item);
+        }
+        $version->save();
+        //$version->previousVersion()->save($this);
     }
 
     /**
@@ -104,7 +110,7 @@ trait Versionable
         return $this->morphToMany($release, 'versionable');
     }
 
-    public function previousVersion() : HasOne
+    public function previousVersion(): HasOne
     {
         // TODO: This is probably wrong, revise this.
         return $this->hasOne('versionable', 'previous_version_id', 'id');
