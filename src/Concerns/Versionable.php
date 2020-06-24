@@ -4,6 +4,7 @@ namespace Plank\Versionable\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 use Plank\Versionable\Models\Version;
 use Exception;
 use Closure;
@@ -57,6 +58,28 @@ trait Versionable
     }
 
     /**
+     * Get all the linked releases for a given model instance.
+     *
+     * @return MorphToMany
+     */
+    public function releases(): MorphToMany
+    {
+        $release = config('versionable.release_model', Version::class);
+
+        return $this->morphToMany($release, 'versionable');
+    }
+
+    public function scopeLatestSince(Builder $q, Version $v)
+    {
+        return $q
+            ->whereHas('releases', function (Builder $query) use ($v) {
+                $query->where('id', $v->id)
+                    ->orWhere('created_at', '<', $v->created_at)
+                    ->orderBy('created_at', 'desc'); // unneeded?
+            });
+    }
+
+    /**
      *  each link to a release contains metadata that can be used to build a previous version of given model
      */
     public function createNewVersion()
@@ -67,7 +90,7 @@ trait Versionable
             $version->setRelation($relation, $item);
         }
         $version->save();
-        //$version->previousVersion()->save($this);
+        $version->pivot->previousVersion()->save($this);
     }
 
     /**
@@ -98,21 +121,4 @@ trait Versionable
         $this->releases()->sync([]);
     }
 
-    /**
-     * Get all the linked releases for a given model instance.
-     *
-     * @return MorphToMany
-     */
-    public function releases(): MorphToMany
-    {
-        $release = config('versionable.release_model', Version::class);
-
-        return $this->morphToMany($release, 'versionable');
-    }
-
-    public function previousVersion(): HasOne
-    {
-        // TODO: This is probably wrong, revise this.
-        return $this->hasOne('versionable', 'previous_version_id', 'id');
-    }
 }

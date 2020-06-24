@@ -58,6 +58,7 @@ class Version extends Model
     {
         return $this->morphedByMany($class, 'versionable')
             ->withPivot('meta')
+            ->using(Versionable::class)
             ->withTimestamps();
     }
 }
