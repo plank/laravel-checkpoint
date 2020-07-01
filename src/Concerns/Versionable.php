@@ -103,6 +103,9 @@ trait Versionable
         // Make sure we preserve the original
         $version = $this->replicate();
 
+        // TODO: Get latest target release
+        $targetRelease = '';
+
         // Duplicate relationships as well - replicated doesn't do this
         foreach ($this->getRelations() as $relation => $item) {
             $version->setRelation($relation, $item);
@@ -110,6 +113,8 @@ trait Versionable
         // Store the new version
         $version->saveWithoutEvents();
         // Set our needed pivot data
+        // TODO: get the pivot we are targeting, like in startVersion
+        $pivot = '';
         $version->releases->pivot->shared_key = $this->pivot->shared_key;
         $version->releases->pivot->previousVersion()->associate($this);
         $version->releases->pivot->save();
