@@ -19,7 +19,7 @@ use Ramsey\Uuid\Uuid;
 trait Versionable
 {
 
-    public $unversionedColumns = [];
+    public $metaColumns = [];
 
     public $unwatchedColumns = [];
 
@@ -79,14 +79,20 @@ trait Versionable
         return $this->morphToMany($release, 'versionable');
     }
 
+    /**
+     * Filter by a release; gets all the versions of a model from a given release or earlier.
+     * @param Builder $q
+     * @param Version $v
+     * @return Builder
+     */
     public function scopeLatestSince(Builder $q, Version $v)
     {
         return $q
             ->whereHas('releases', function (Builder $query) use ($v) {
-                $query->where('id', $v->id)
-                    ->orWhere('created_at', '<', $v->created_at)
-                    ->orderBy('created_at', 'desc'); // unneeded?
-            });
+                $query->where('id', $v->id);
+            })
+            ->orWhere('created_at', '<=', $v->created_at)
+            ->orderBy('created_at', 'desc');
     }
 
     /**
@@ -97,25 +103,35 @@ trait Versionable
         // Make sure we preserve the original
         $version = $this->replicate();
 
-        // duplicate relationships as well - replicated doesn't do this
+        // Duplicate relationships as well - replicated doesn't do this
         foreach ($this->getRelations() as $relation => $item) {
             $version->setRelation($relation, $item);
         }
         // Store the new version
         $version->saveWithoutEvents();
-        // set our needed pivot data
-        $version->pivot->shared_key = $this->pivot->shared_key;
-        $version->pivot->previousVersion()->associate($this);
-        $version->pivot->save();
+        // Set our needed pivot data
+        $version->releases->pivot->shared_key = $this->pivot->shared_key;
+        $version->releases->pivot->previousVersion()->associate($this);
+        $version->releases->pivot->save();
 
         $this->fill($this->getOriginal());
-        // TODO: Clear meta stored columns on original
+        // Clear meta stored columns on original
+        foreach ($this->metaColumns as $column) {
+            $this->$column = null;
+        }
 
     }
 
     public function startVersioning()
     {
-        $this->pivot->shared_key = Uuid::uuid4();
+        // Get latest version / release, attach this model to it
+        $release = config('versionable.release_model', Version::class);
+        $targetRelease = $release::orderBy('created_at', 'desc')->firstOrFail();
+        $this->releases()->attach($targetRelease);
+        // Init the shared key that will be pass through the generations of this model instance
+        $pivot = $this->releases()->first()->pivot;
+        $pivot->shared_key = Uuid::uuid4();
+        $pivot->save();
     }
 
     /**
@@ -146,7 +162,7 @@ trait Versionable
         $this->releases()->sync([]);
     }
 
-    public function saveWithoutEvents(array $options = [])
+    private function saveWithoutEvents(array $options = [])
     {
         return static::withoutEvents(function() use ($options) {
             return $this->save($options);
