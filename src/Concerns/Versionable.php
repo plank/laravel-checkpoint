@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Plank\Versionable\Models\Version;
 use Exception;
 use Closure;
+use Ramsey\Uuid\Uuid;
 
 /**
  * Trait Versionable
@@ -17,6 +18,11 @@ use Closure;
  */
 trait Versionable
 {
+
+    public $unversionedColumns = [];
+
+    public $unwatchedColumns = [];
+
     /**
      * Boot the trait.
      *
@@ -24,7 +30,11 @@ trait Versionable
      */
     public static function bootVersionable(): void
     {
-        static::saving(function (self $model) {
+        static::created(function (self $model) {
+            $model->startVersioning();
+        });
+
+        static::updating(function (self $model) {
             $model->createNewVersion();
         });
 
@@ -84,13 +94,28 @@ trait Versionable
      */
     public function createNewVersion()
     {
+        // Make sure we preserve the original
         $version = $this->replicate();
-        // duplicate relationships as well - somehow...
+
+        // duplicate relationships as well - replicated doesn't do this
         foreach ($this->getRelations() as $relation => $item) {
             $version->setRelation($relation, $item);
         }
-        $version->save();
-        $version->pivot->previousVersion()->save($this);
+        // Store the new version
+        $version->saveWithoutEvents();
+        // set our needed pivot data
+        $version->pivot->shared_key = $this->pivot->shared_key;
+        $version->pivot->previousVersion()->associate($this);
+        $version->pivot->save();
+
+        $this->fill($this->getOriginal());
+        // TODO: Clear meta stored columns on original
+
+    }
+
+    public function startVersioning()
+    {
+        $this->pivot->shared_key = Uuid::uuid4();
     }
 
     /**
@@ -119,6 +144,13 @@ trait Versionable
     public function deleteAllVersions(): void
     {
         $this->releases()->sync([]);
+    }
+
+    public function saveWithoutEvents(array $options = [])
+    {
+        return static::withoutEvents(function() use ($options) {
+            return $this->save($options);
+        });
     }
 
 }
