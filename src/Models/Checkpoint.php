@@ -1,17 +1,18 @@
 <?php
-namespace Plank\Versionable\Models;
+namespace Plank\Checkpoint\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-class Version extends Model
+class Checkpoint extends Model
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'versions';
+    protected $table = 'checkpoints';
 
     /**
      * The primary key for the model.
@@ -49,16 +50,14 @@ class Version extends Model
      */
     protected $guarded = ['id'];
 
-    /**
-     * Retrieve all associated models of given class.
-     * @param  string $class FQCN
-     * @return MorphToMany
-     */
-    public function models(string $class): MorphToMany
+    public function revisions(): HasMany
     {
-        return $this->morphedByMany($class, 'versionable')
-            ->withPivot('meta')
-            ->using(Versionable::class)
-            ->withTimestamps();
+        $model = config('checkpoint.revision_model', Revision::class);
+        return $this->hasMany($model, 'checkpoint_id');
+    }
+
+    public function models(): HasMany
+    {
+        //
     }
 }

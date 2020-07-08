@@ -1,11 +1,15 @@
 {
-    "name": "plank/laravel-versionable",
-    "description": "A package for establishing a polymorphic many to many relationship between a model and a versions table",
+    "name": "plank/laravel-checkpoint",
+    "description": "A package for keeping a history of your models' revisions and accessing your data as it as at an older date.",
     "keywords": [
         "plank",
+        "checkpoint",
+        "revision",
+        "revisionable",
+        "version",
         "versionable"
     ],
-    "homepage": "https://github.com/plank/laravel-versionable",
+    "homepage": "https://github.com/plank/laravel-checkpoint",
     "license": "MIT",
     "type": "library",
     "authors": [
@@ -30,12 +34,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Plank\\Versionable\\": "src"
+            "Plank\\Checkpoint\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Plank\\Versionable\\Tests\\": "tests"
+            "Plank\\Checkpoint\\Tests\\": "tests"
         }
     },
     "scripts": {
@@ -49,11 +53,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Plank\\Versionable\\VersionableServiceProvider"
-            ],
-            "aliases": {
-                "Versionable": "Plank\\Versionable\\VersionableFacade"
-            }
+                "Plank\\Checkpoint\\VersionableServiceProvider"
+            ]
         }
     }
 }

@@ -20,7 +20,15 @@ return [
     | To extend or replace this functionality, change the value below with your full "version model" FQN.
     |
     */
-    'release_model' => \Plank\Versionable\Models\Version::class,
+    'checkpoint_model' => \Plank\Checkpoint\Models\Checkpoint::class,
+
+    /*
+    |
+    | Concrete implementation for the "version model".
+    | To extend or replace this functionality, change the value below with your full "version model" FQN.
+    |
+    */
+    'revision_model' => \Plank\Checkpoint\Models\Revision::class,
 
 
 ];

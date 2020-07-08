@@ -1,22 +1,24 @@
 <?php
 
-namespace Plank\Versionable\Concerns;
+namespace Plank\Checkpoint\Concerns;
 
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Builder;
-use Plank\Versionable\Models\Version;
 use Exception;
 use Closure;
+use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Plank\Checkpoint\Models\Checkpoint;
+use Plank\Checkpoint\Models\Revision;
 use Ramsey\Uuid\Uuid;
 
 /**
- * Trait Versionable
  * @package Plank\Versionable\Concerns
  *
  * @mixin \Illuminate\Database\Eloquent\Model
  */
-trait Versionable
+trait HasRevisions
 {
 
     public $metaColumns = [];
@@ -68,15 +70,32 @@ trait Versionable
     }
 
     /**
-     * Get all the linked releases for a given model instance.
+     * Get the revision representing this model
      *
-     * @return MorphToMany
+     * @return MorphOne
      */
-    public function releases(): MorphToMany
+    public function revision(): MorphOne
     {
-        $release = config('versionable.release_model', Version::class);
+        $model = config('checkpoint.revision_model', Revision::class);
+        return $this->morphOne($model, 'revisionable');
+    }
 
-        return $this->morphToMany($release, 'versionable');
+
+    public function checkpoint(): BelongsTo
+    {
+        return $this->revision()->firstOrFail()->checkpoint();
+    }
+
+    /**
+     * Get all revision representing this model
+     *
+     * @return MorphOneOrMany
+     */
+    public function revisions(): MorphOneOrMany
+    {
+        //todo
+        $model = config('checkpoint.revision_model', Revision::class);
+        return $this->morphOne($model, 'revisionable', 'revisionable_type', 'original_revisionable_id');
     }
 
     /**
@@ -130,7 +149,7 @@ trait Versionable
     public function startVersioning()
     {
         // Get latest version / release, attach this model to it
-        $release = config('versionable.release_model', Version::class);
+        $release = config('checkpoint.release_model', Version::class);
         $targetRelease = $release::orderBy('created_at', 'desc')->firstOrFail();
         $this->releases()->attach($targetRelease);
         // Init the shared key that will be pass through the generations of this model instance
