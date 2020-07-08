@@ -2,11 +2,12 @@
 namespace Plank\Checkpoint\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Query\Builder;
 
-class Revision extends Model
+class Revision extends MorphPivot
 {
     /**
      * The table associated with the model.
@@ -78,7 +79,7 @@ class Revision extends Model
     }
 
     /**
-     * Return the last revision model associated to this entry
+     * Return the revision made right before this one
      *
      * @return BelongsTo
      */
@@ -87,8 +88,35 @@ class Revision extends Model
         return $this->belongsTo(self::class, 'previous_revision_id', $this->primaryKey);
     }
 
+    /**
+     * Return the revision that follows this one
+     *
+     * @return BelongsTo
+     */
     public function next(): HasOne
     {
         return $this->hasOne(self::class, 'previous_revision_id', $this->primaryKey);
+    }
+
+    /**
+     * Return all the revisions that share the same item
+     *
+     * @return
+     */
+    public function allRevisions(): HasMany
+    {
+        return $this
+            ->hasMany(self::class, 'revisionable_type', 'revisionable_type')
+            ->where('original_revisionable_id', $this->original_revisionable_id);
+    }
+
+    /**
+     * Return all the revisions sibling that share the same item
+     *
+     * @return
+     */
+    public function otherRevisions(): HasMany
+    {
+        return $this->allRevisions()->where('id', '!=', $this->id);
     }
 }
