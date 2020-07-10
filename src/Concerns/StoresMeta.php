@@ -1,23 +1,29 @@
 <?php
 
-namespace Plank\Versionable\Concerns;
+namespace Plank\Checkpoint\Concerns;
 
 trait StoresMeta
 {
     public $metaAttributes = [];
 
+
     /**
      * Moves data in columns specified in $metaAttributes from the model the revision
      */
-    private function handleMeta()
+    private function handleMeta(&$revision = null)
     {
         $meta = collect();
         foreach ($this->metaAttributes as $attribute) {
-            $meta->push($this->$attribute);
+            $meta[$attribute] = $this->$attribute;
             $this->$attribute = null;
         }
-        $revision = $this->revision;
-        $revision->meta = $meta->toJson();
+        $revision = $revision ?? $this->revision;
+        $revision->metadata = $meta->toJson();
         $revision->save();
+        $this->saveWithoutEvents();
+    }
+
+    public function registerMetaAttributes()
+    {
     }
 }

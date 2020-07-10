@@ -3,7 +3,6 @@
 namespace Plank\Checkpoint\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Builder;
 use Exception;
@@ -20,6 +19,8 @@ use Ramsey\Uuid\Uuid;
  */
 trait HasRevisions
 {
+    use StoresMeta;
+
     public $unwatchedColumns = [];
 
     /**
@@ -27,7 +28,7 @@ trait HasRevisions
      *
      * @return void
      */
-    public static function bootVersionable(): void
+    public static function bootHasRevisions(): void
     {
         static::created(function (self $model) {
             $model->startVersioning();
@@ -98,10 +99,10 @@ trait HasRevisions
     /**
      * Filter by a release; gets all the versions of a model from a given release or earlier.
      * @param Builder $q
-     * @param Version $v
+     * @param Checkpoint $v
      * @return Builder
      */
-    public function scopeLatestSince(Builder $q, Version $v)
+    public function scopeLatestSince(Builder $q, Checkpoint $v)
     {
         return $q
             ->whereHas('releases', function (Builder $query) use ($v) {
@@ -119,51 +120,52 @@ trait HasRevisions
         // Make sure we preserve the original
         $version = $this->replicate();
 
-        // Duplicate relationships as well - replicated doesn't do this
+        // Duplicate relationships as well - replicate doesn't do this
         foreach ($this->getRelations() as $relation => $item) {
             $version->setRelation($relation, $item);
         }
         // Store the new version
         $version->saveWithoutEvents();
+
+        $revisonModel = config('checkpoint.revision_model', Revision::class);
+        $revision = new $revisonModel;
+
         // Set our needed "pivot" data
-        $version->revision->original_revisionable_id = $this->revision->original_revisionable_id;
-        $version->revision->revisionable_type = $this->revision->revisionable_type;
-        $version->revision->previousVersion()->associate($this);
-        $version->revision->save();
+        $revision->revisionable()->associate($version);
+        $revision->original_revisionable_id = $this->revision->original_revisionable_id;
+        $revision->previous()->associate($this);
+        $this->handleMeta();
+        $revision->save();
 
         $this->fill($this->getOriginal());
-        // Clear meta stored columns on original
-        foreach ($this->metaColumns as $column) {
-            $this->$column = null;
-        }
 
     }
 
     public function startVersioning()
     {
-        // Get latest version / release, attach this model to it
-        $release = config('checkpoint.release_model', Version::class);
-        $targetRelease = $release::orderBy('created_at', 'desc')->firstOrFail();
-        $this->releases()->attach($targetRelease);
-        // Init the shared key that will be pass through the generations of this model instance
-        $pivot = $this->releases()->first()->pivot;
-        $pivot->shared_key = Uuid::uuid4();
-        $pivot->save();
+        $revisonModel = config('checkpoint.revision_model', Revision::class);
+        $revision = new $revisonModel;
+        $revision->revisionable()->associate($this);
+        $revision->original_revisionable_id = $this->id;
+
+        $revision->save();
     }
 
     /**
      * @return void
      */
-    public function rollbackToVersion(Version $v): void
+    public function rollbackToVersion(Checkpoint $v): void
     {
         // Rollback & rewrite history
         // delete all new items until you hit version $v
     }
 
+    // TODO: Dynamic mutator to resolve a field from the meta column if you pull an older revisions and it is null
+
     /**
      * @return void
      */
-    public function revertToVersion(Version $v): void
+    public function revertToVersion(Checkpoint $v): void
     {
         // move to old version touch to restore model state to create a new copy at that moment in time
     }
