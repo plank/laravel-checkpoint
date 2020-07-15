@@ -120,10 +120,10 @@ trait HasRevisions
         // Make sure we preserve the original
         $version = $this->replicate();
 
-        // Duplicate relationships as well - replicate doesn't do this
-        foreach ($this->getRelations() as $relation => $item) {
-            $version->setRelation($relation, $item);
-        }
+        // Duplicate relationships as well - replicate doesn't do this, or maybe it does?
+//        foreach ($this->getRelations() as $relation => $item) {
+//            $version->setRelation($relation, $item);
+//        }
         // Store the new version
         $version->saveWithoutEvents();
 
@@ -134,10 +134,11 @@ trait HasRevisions
         $revision->revisionable()->associate($version);
         $revision->original_revisionable_id = $this->revision->original_revisionable_id;
         $revision->previous()->associate($this);
+        $this->fill($this->getOriginal());
         $this->handleMeta();
+
         $revision->save();
 
-        $this->fill($this->getOriginal());
 
     }
 
