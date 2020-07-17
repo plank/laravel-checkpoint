@@ -23,7 +23,22 @@ trait StoresMeta
 
     }
 
-    public function registerMetaAttributes()
+    public function setAttribute($key, $value)
     {
+        $metaAttributes = $this->registerMetaAttributes();
+
+        if ($value && in_array($key, $metaAttributes)) {
+            $value = json_decode($this->revision->metadata)->$key;
+        }
+
+        parent::setAttribute($key, $value);
+    }
+
+    /**
+     * @return array
+     */
+    public function registerMetaAttributes(): array
+    {
+        return [];
     }
 }

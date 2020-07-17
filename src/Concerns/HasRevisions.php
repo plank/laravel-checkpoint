@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Exception;
 use Closure;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 use Ramsey\Uuid\Uuid;
@@ -85,7 +86,7 @@ trait HasRevisions
     }
 
     /**
-     * Get all revision representing this model
+     * Get all revisions representing this model
      *
      * @return MorphOneOrMany
      */
@@ -97,18 +98,38 @@ trait HasRevisions
     }
 
     /**
+     * Get the previous instance of this model
+     *
+     * @return MorphTo
+     */
+    public function previous(): MorphTo
+    {
+        return $this->revision->previous->revisionable();
+    }
+
+    /**
+     * Get the next instance of this model
+     *
+     * @return MorphTo
+     */
+    public function next(): MorphTo
+    {
+        return $this->revision->next->revisionable();
+    }
+
+    /**
      * Filter by a release; gets all the versions of a model from a given release or earlier.
      * @param Builder $q
      * @param Checkpoint $v
      * @return Builder
      */
-    public function scopeLatestSince(Builder $q, Checkpoint $v)
+    public function scopeLatestSince(Builder $q, Checkpoint $c)
     {
         return $q
-            ->whereHas('releases', function (Builder $query) use ($v) {
-                $query->where('id', $v->id);
+            ->whereHas('checkpoint', function (Builder $query) use ($c) {
+                $query->where('id', $c->id);
             })
-            ->orWhere('created_at', '<=', $v->created_at)
+            ->orWhere('created_at', '<=', $c->created_at)
             ->orderBy('created_at', 'desc');
     }
 
@@ -179,7 +200,7 @@ trait HasRevisions
      */
     public function deleteAllVersions(): void
     {
-        $this->releases()->sync([]);
+        $this->revisions()->sync([]);
     }
 
     private function saveWithoutEvents(array $options = [])
