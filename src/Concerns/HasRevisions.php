@@ -32,11 +32,11 @@ trait HasRevisions
     public static function bootHasRevisions(): void
     {
         static::created(function (self $model) {
-            $model->startVersioning();
+            $model->startRevisioning();
         });
 
         static::updating(function (self $model) {
-            $model->createNewVersion();
+            $model->makeRevision();
         });
 
         static::deleted(function (self $model) {
@@ -79,12 +79,6 @@ trait HasRevisions
         return $this->morphOne($model, 'revisionable');
     }
 
-
-    public function checkpoint(): BelongsTo
-    {
-        return $this->revision()->firstOrFail()->checkpoint();
-    }
-
     /**
      * Get all revisions representing this model
      *
@@ -94,8 +88,19 @@ trait HasRevisions
     {
         //todo
         $model = config('checkpoint.revision_model', Revision::class);
-        return $this->morphOne($model, 'revisionable', 'revisionable_type', 'original_revisionable_id');
+        return $this->morphMany($model, 'revisionable', 'revisionable_type', 'original_revisionable_id');
     }
+
+
+    /**
+     * Return the checkpoint that this model belongs to
+     * @return BelongsTo
+     */
+    public function checkpoint(): BelongsTo
+    {
+        return $this->revision->checkpoint();
+    }
+
 
     /**
      * Get the previous instance of this model
@@ -117,33 +122,41 @@ trait HasRevisions
         return $this->revision->next->revisionable();
     }
 
+    public function getOriginalIdAttribute()
+    {
+        return $this->revision->original_revisionable_id;
+    }
+
     /**
      * Filter by a release; gets all the versions of a model from a given release or earlier.
      * @param Builder $q
      * @param Checkpoint $v
      * @return Builder
      */
-    public function scopeLatestSince(Builder $q, Checkpoint $c)
+    public function scopeLatestBefore(Builder $q, Checkpoint $c)
     {
+        $previousCheckpoints = Checkpoint::where('checkpoint_date', '<=' ,$c->checkpoint_date)->pluck('id');
         return $q
-            ->whereHas('checkpoint', function (Builder $query) use ($c) {
-                $query->where('id', $c->id);
+            ->whereHas('revision', function (Builder $query) use ($previousCheckpoints) {
+                $query->whereIn('checkpoint_id', $previousCheckpoints);
             })
-            ->orWhere('created_at', '<=', $c->created_at)
+//            ->whereHas('revision', function (Builder $query) {
+//                $query->where('latest', 1);
+//            })
             ->orderBy('created_at', 'desc');
     }
 
     /**
      *  each link to a release contains metadata that can be used to build a previous version of given model
      */
-    public function createNewVersion()
+    public function makeRevision()
     {
         // Make sure we preserve the original
         $version = $this->replicate();
 
-        // Duplicate relationships as well - replicate doesn't do this, or maybe it does?
+        // Duplicate relationships as well - but make sure we attach only the latest version of something
 //        foreach ($this->getRelations() as $relation => $item) {
-//            $version->setRelation($relation, $item);
+//            $version->setRelation($relation, $item/*->latestBefore()*/);
 //        }
         // Store the new version
         $version->saveWithoutEvents();
@@ -163,7 +176,7 @@ trait HasRevisions
 
     }
 
-    public function startVersioning()
+    public function startRevisioning()
     {
         $revisonModel = config('checkpoint.revision_model', Revision::class);
         $revision = new $revisonModel;
@@ -182,8 +195,6 @@ trait HasRevisions
         // delete all new items until you hit version $v
     }
 
-    // TODO: Dynamic mutator to resolve a field from the meta column if you pull an older revisions and it is null
-
     /**
      * @return void
      */
@@ -198,11 +209,16 @@ trait HasRevisions
      * @return void
      * @throws Exception
      */
-    public function deleteAllVersions(): void
+    public function deleteRevision(): void
     {
         $this->revisions()->sync([]);
     }
 
+    /**
+     * Fire a save event for model, without triggering observers / events
+     * @param array $options
+     * @return mixed
+     */
     private function saveWithoutEvents(array $options = [])
     {
         return static::withoutEvents(function() use ($options) {
