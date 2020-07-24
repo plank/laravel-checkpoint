@@ -2,7 +2,7 @@
 
 namespace Plank\Checkpoint\Concerns;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Builder;
 use Exception;
@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
-use Ramsey\Uuid\Uuid;
 
 /**
  * @package Plank\Versionable\Concerns
@@ -94,11 +93,21 @@ trait HasRevisions
 
     /**
      * Return the checkpoint that this model belongs to
-     * @return BelongsTo
+     * @return hasOneThrough
      */
-    public function checkpoint(): BelongsTo
+    public function checkpoint(): hasOneThrough
     {
-        return $this->revision->checkpoint();
+        $revision = config('checkpoint.revision_model', Revision::class);
+        $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
+        return $this->hasOneThrough(
+            $checkpoint,
+            $revision,
+            'revisionable_id',
+            'id',
+            'id',
+            'checkpoint_id'
+        )
+            ->where('revisionable_type', self::class);
     }
 
 
@@ -133,17 +142,23 @@ trait HasRevisions
      * @param Checkpoint $v
      * @return Builder
      */
-    public function scopeLatestBefore(Builder $q, Checkpoint $c)
+    public function scopeLatestBefore(Builder $q, Checkpoint $c = null)
     {
-        $previousCheckpoints = Checkpoint::where('checkpoint_date', '<=' ,$c->checkpoint_date)->pluck('id');
-        return $q
-            ->whereHas('revision', function (Builder $query) use ($previousCheckpoints) {
-                $query->whereIn('checkpoint_id', $previousCheckpoints);
-            })
-//            ->whereHas('revision', function (Builder $query) {
-//                $query->where('latest', 1);
-//            })
-            ->orderBy('created_at', 'desc');
+        if ($c) {
+            $previousCheckpoints = Checkpoint::where('checkpoint_date', '<=' ,$c->checkpoint_date)->pluck('id');
+            return $q
+                ->whereHas('revision', function (Builder $query) use ($previousCheckpoints) {
+                    $query
+                        // or do a select before instead of whereRaw?
+                        ->whereRaw('`revisions`.`created_at` in (SELECT DISTINCT max(created_at) FROM revisions GROUP BY original_revisionable_id)')
+                        ->whereIn('checkpoint_id', $previousCheckpoints);
+                });
+        } else {
+            return $q
+                ->whereHas('revision', function (Builder $query) {
+                    $query->where('latest', true);
+                });
+        }
     }
 
     /**
