@@ -7,16 +7,12 @@ trait StoresMeta
     public $metaAttributes = [];
 
     /**
-     * Override model constructor to register media attributes, but make sure to do all expected calls first.
+     * Override model constructor to register media attributes, but make sure to call the Model constructor.
      * @param array $attributes
      */
     public function __construct(array $attributes = [])
     {
-        $this->bootIfNotBooted();
-        $this->initializeTraits();
-        $this->syncOriginal();
-        $this->fill($attributes);
-
+        parent::__construct();
         $this->metaAttributes = $this->registerMetaAttributes();
     }
 
@@ -31,6 +27,7 @@ trait StoresMeta
             $this->$attribute = null;
         }
         $revision = $revision ?? $this->revision;
+        $revision->latest = false;
         $revision->metadata = $meta->toJson();
         $revision->save();
 
