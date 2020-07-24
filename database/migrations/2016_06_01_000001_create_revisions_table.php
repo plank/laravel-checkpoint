@@ -19,13 +19,13 @@ class CreateRevisionsTable extends Migration
                 $table->id();
                 $table->morphs('revisionable');
                 $table->unsignedBigInteger('original_revisionable_id');
-                $table->index(['revisionable_type', 'original_revisionable_id']);
-
+                $table->boolean('latest')->default(true);
                 $table->json('metadata')->nullable();
                 $table->unsignedBigInteger('previous_revision_id')->nullable();
                 $table->unsignedBigInteger('checkpoint_id')->nullable();
-
                 $table->timestamps();
+
+                $table->index(['revisionable_type', 'original_revisionable_id']);
             }
         );
     }
