@@ -33,6 +33,12 @@ trait StoresMeta
 
     }
 
+    /**
+     * Override of getAttribute from base eloquent model. This allows a user to access an attribute that is stored
+     * in the meta data instead of the model.
+     * @param $key
+     * @return mixed
+     */
     public function getAttribute($key)
     {
         $value = parent::getAttribute($key);
