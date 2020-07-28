@@ -3,12 +3,13 @@
 namespace Plank\Checkpoint\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Plank\Checkpoint\Scopes\CheckpointScope;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Database\Eloquent\Builder;
 use Exception;
 use Closure;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 
@@ -30,6 +31,11 @@ trait HasRevisions
      */
     public static function bootHasRevisions(): void
     {
+        //static::addGlobalScope(new CheckpointScope());
+
+        // hook newVersion onto all relevent events
+        // On Create, Update, Delete, Restore : make new revisions...
+
         static::created(function (self $model) {
             $model->startRevisioning();
         });
@@ -41,6 +47,8 @@ trait HasRevisions
         static::deleted(function (self $model) {
             if ($model->forceDeleting !== false) {
                 $model->deleteAllVersions();
+            } else {
+                $model->makeRevision();
             }
         });
     }
@@ -66,6 +74,8 @@ trait HasRevisions
     {
         static::registerModelEvent('versioned', $callback);
     }
+
+    //////// START RELATIONS
 
     /**
      * Get the revision representing this model
@@ -167,34 +177,39 @@ trait HasRevisions
     public function makeRevision()
     {
         // Make sure we preserve the original
-        $version = $this->replicate();
+        $newItem = $this->replicate();
 
         // Duplicate relationships as well - but make sure we attach only the latest version of something
 //        foreach ($this->getRelations() as $relation => $item) {
 //            $version->setRelation($relation, $item/*->latestBefore()*/);
 //        }
-        // Store the new version
-        $version->saveWithoutEvents();
 
-        $revisonModel = config('checkpoint.revision_model', Revision::class);
-        $revision = new $revisonModel;
+        // Store the new version
+        $newItem->saveWithoutEvents();
+        $this->fill($this->getOriginal());
+
+
 
         // Set our needed "pivot" data
-        $revision->revisionable()->associate($version);
-        $revision->original_revisionable_id = $this->revision->original_revisionable_id;
-        $revision->previous()->associate($this);
+        $model = config('checkpoint.revision_model', Revision::class);
+        $newRevision = new $model;
+        $newRevision->revisionable()->associate($newItem);
+        $newRevision->original_revisionable_id = $this->revision->original_revisionable_id;
+        if ($this->revision()->exists()) {
+            $newRevision->previous()->associate($this->revision()->get());
+        }
         $this->fill($this->getOriginal());
         $this->handleMeta();
 
-        $revision->save();
+        $newRevision->save();
 
 
     }
 
     public function startRevisioning()
     {
-        $revisonModel = config('checkpoint.revision_model', Revision::class);
-        $revision = new $revisonModel;
+        $model = config('checkpoint.revision_model', Revision::class);
+        $revision = new $model;
         $revision->revisionable()->associate($this);
         $revision->original_revisionable_id = $this->id;
 
@@ -204,18 +219,18 @@ trait HasRevisions
     /**
      * @return void
      */
-    public function rollbackToVersion(Checkpoint $v): void
+    public function rollbackToRevision(Revision $revision): void
     {
         // Rollback & rewrite history
-        // delete all new items until you hit version $v
+        // delete all revisions & items until you hit version $revision
     }
 
     /**
      * @return void
      */
-    public function revertToVersion(Checkpoint $v): void
+    public function revertToRevision(Revision $revision): void
     {
-        // move to old version touch to restore model state to create a new copy at that moment in time
+        // move to old revision touch to restore model state to create a new copy at that moment in time
     }
 
     /**
@@ -224,9 +239,9 @@ trait HasRevisions
      * @return void
      * @throws Exception
      */
-    public function deleteRevision(): void
+    public function deleteAllRevisions(): void
     {
-        $this->revisions()->sync([]);
+
     }
 
     /**
