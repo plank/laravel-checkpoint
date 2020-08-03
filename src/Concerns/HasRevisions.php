@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @package Plank\Versionable\Concerns
@@ -31,7 +32,7 @@ trait HasRevisions
      */
     public static function bootHasRevisions(): void
     {
-        //static::addGlobalScope(new CheckpointScope());
+        static::addGlobalScope(new CheckpointScope());
 
         // hook newVersion onto all relevent events
         // On Create, Update, Delete, Restore : make new revisions...
