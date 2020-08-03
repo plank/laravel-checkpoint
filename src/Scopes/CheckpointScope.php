@@ -71,10 +71,25 @@ class CheckpointScope implements Scope
             $revision = config('checkpoint.revision_model', Revision::class);
 
             $builder->withoutGlobalScope($this);
+            // worst case execution plan : #reads = all rows in your table * all checkpoints * all revisions
+            // the timestamps subquery is the most expensive, reading all revisions from disk, try to build an index to fit it.
 
-            $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                ->joinSub($revision::timestamps($upper, $lower), 'temporal', 'temporal.closest', '=', 'revisions.created_at')
-                ->where('revisionable_type', '=', get_class($model));
+            //TODO: watch out for hardcoded columns names and relation names
+
+            // METHOD 1: Join current table on revisions, join the result on timestamps subquery
+            /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
+                 ->joinSub($revision::timestamps($upper, $lower), 'temporal', 'temporal.closest', '=', 'revisions.created_at')
+                 ->where('revisionable_type', '=', get_class($model));*/
+
+            // METHOD 2 : Join current table on revisions, filter out by revisionable_type, use a whereIn subquery for timestamps
+            /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
+                ->whereIn('revisions.created_at', $revision::timestamps($upper, $lower))
+                ->where('revisionable_type', '=', get_class($model));*/
+            
+            // METHOD 3 : Uses a where exists wrapper, laravel handles the revisionable id/type, use a whereIn subquery for timestamps
+            $builder->whereHas('revision', function (Builder $query) use ($revision, $upper, $lower) {
+               $query->whereIn('revisions.created_at', $revision::timestamps($upper, $lower));
+            });
 
             return $builder;
         });
