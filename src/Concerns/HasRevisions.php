@@ -9,7 +9,6 @@ use Exception;
 use Closure;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,7 +22,13 @@ trait HasRevisions
 {
     use StoresMeta;
 
-    public $unwatchedColumns = [];
+    public $unwatchedColumns;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->unwatchedColumns = $this->registerUnwatchedColumns();
+    }
 
     /**
      * Boot the trait.
@@ -34,7 +39,7 @@ trait HasRevisions
     {
         static::addGlobalScope(new CheckpointScope());
 
-        // hook newVersion onto all relevent events
+        // hook newVersion onto all relevant events
         // On Create, Update, Delete, Restore : make new revisions...
 
         static::created(function (self $model) {
@@ -42,6 +47,7 @@ trait HasRevisions
         });
 
         static::updating(function (self $model) {
+            //if (array_intersect(array_keys($model->getDirty())) {
             $model->makeRevision();
         });
 
@@ -177,33 +183,33 @@ trait HasRevisions
      */
     public function makeRevision()
     {
-        // Make sure we preserve the original
-        $newItem = $this->replicate();
+        // If only unwatched columns are dirty, then don't do any versioning
+        if (array_diff(array_keys($this->getDirty()), $this->unwatchedColumns) !== []) {
+            // Make sure we preserve the original
+            $newItem = $this->replicate();
 
-        // Duplicate relationships as well - but make sure we attach only the latest version of something
-//        foreach ($this->getRelations() as $relation => $item) {
-//            $version->setRelation($relation, $item/*->latestBefore()*/);
-//        }
+            // Duplicate relationships as well - but make sure we attach only the latest version of something
+//            foreach ($this->getRelations() as $relation => $item) {
+//                $version->setRelation($relation, $item/*->latestBefore()*/);
+//            }
 
-        // Store the new version
-        $newItem->saveWithoutEvents();
-        $this->fill($this->getOriginal());
+            // Store the new version
+            $newItem->saveWithoutEvents();
+            $this->fill($this->getOriginal());
 
+            // Set our needed "pivot" data
+            $model = config('checkpoint.revision_model', Revision::class);
+            $newRevision = new $model;
+            $newRevision->revisionable()->associate($newItem);
+            $newRevision->original_revisionable_id = $this->revision->original_revisionable_id;
+            if ($this->revision()->exists()) {
+                $newRevision->previous()->associate($this->revision()->get());
+            }
+            $this->fill($this->getOriginal());
+            $this->handleMeta();
 
-
-        // Set our needed "pivot" data
-        $model = config('checkpoint.revision_model', Revision::class);
-        $newRevision = new $model;
-        $newRevision->revisionable()->associate($newItem);
-        $newRevision->original_revisionable_id = $this->revision->original_revisionable_id;
-        if ($this->revision()->exists()) {
-            $newRevision->previous()->associate($this->revision()->get());
+            $newRevision->save();
         }
-        $this->fill($this->getOriginal());
-        $this->handleMeta();
-
-        $newRevision->save();
-
 
     }
 
@@ -245,6 +251,11 @@ trait HasRevisions
 
     }
 
+    public function registerUnwatchedColumns(): array
+    {
+        return [];
+    }
+
     /**
      * Fire a save event for model, without triggering observers / events
      * @param array $options
@@ -256,5 +267,4 @@ trait HasRevisions
             return $this->save($options);
         });
     }
-
 }

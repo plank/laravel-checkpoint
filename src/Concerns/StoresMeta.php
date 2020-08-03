@@ -12,7 +12,7 @@ trait StoresMeta
      */
     public function __construct(array $attributes = [])
     {
-        parent::__construct();
+        parent::__construct($attributes);
         $this->metaAttributes = $this->registerMetaAttributes();
     }
 

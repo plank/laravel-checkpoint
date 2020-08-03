@@ -32,7 +32,7 @@ class CheckpointScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->latest()->latestRevision;
+        $builder->at();
     }
 
     /**
@@ -57,7 +57,7 @@ class CheckpointScope implements Scope
                     ]);
                 });*/
     }
-    
+
 
     /**
      * Allows to scope the query using dates or
@@ -75,7 +75,7 @@ class CheckpointScope implements Scope
             $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
                 ->joinSub($revision::timestamps($upper, $lower), 'temporal', 'temporal.closest', '=', 'revisions.created_at')
                 ->where('revisionable_type', '=', get_class($model));
-            
+
             return $builder;
         });
     }
@@ -103,18 +103,6 @@ class CheckpointScope implements Scope
             return $builder->temporal(null, $moment);
         });
     }
-    
-    /**
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @return void
-     */
-    protected function addLatestRevision(Builder $builder)
-    {
-        $builder->macro('latestVersion', function (Builder $builder) {
-            return $builder->temporal();
-        });
-    }
-    
 
     /**
      * Shortcut to clearing scope from query
@@ -127,7 +115,7 @@ class CheckpointScope implements Scope
             return $builder->withoutGlobalScope($this);
         });
     }
-    
+
     /**
      * Shortcut to clearing scope from query
      * @param \Illuminate\Database\Eloquent\Builder $builder
