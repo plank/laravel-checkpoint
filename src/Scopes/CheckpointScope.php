@@ -19,8 +19,6 @@ class CheckpointScope implements Scope
         'at',
         'since',
         'temporal',
-        'withCheckpoint',
-        'beforeCheckpoint',
         'withoutCheckpoint',
         'withoutRevisions',
     ];
