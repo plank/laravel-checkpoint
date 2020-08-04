@@ -41,18 +41,24 @@ class StartRevisioning extends Command
      */
     public function handle()
     {
+        $checkpoint = null;
         if ($this->option('with-checkpoint')) {
             $checkpointClass = config('checkpoint.checkpoint_model');
-            $checkpoint = new $checkpointClass();
+            $checkpoint = $checkpointClass::first() ?? new $checkpointClass();
             $checkpoint->save();
             $checkpoint->refresh();
         }
 
         if ($class = $this->argument('class')) {
-            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint) {
+            $timeDelta = 1;
+            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
                foreach ($results as $item) {
                    $item->startRevisioning();
-                   $item->revision->checkpoint()->associate($checkpoint)->save();
+                   $revision = $item->revision;
+                   $revision->created_at = $revision->created_at->addSeconds($timeDelta);
+                   $revision->checkpoint()->associate($checkpoint);
+                   $revision->save();
+                   $timeDelta++;
                }
             });
         } else {

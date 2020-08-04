@@ -39,6 +39,13 @@ class Revision extends MorphPivot
     public $incrementing = true;
 
     /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = true;
+
+    /**
      * The name of the "updated at" column.
      *
      * @var string
@@ -101,7 +108,7 @@ class Revision extends MorphPivot
 
     /**
      * Returns true if this is the most current revision for an item
-     * 
+     *
      * @return bool
      */
     public function isLatestRevision(): bool

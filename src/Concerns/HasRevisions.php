@@ -203,7 +203,7 @@ trait HasRevisions
             $newRevision->revisionable()->associate($newItem);
             $newRevision->original_revisionable_id = $this->revision->original_revisionable_id;
             if ($this->revision()->exists()) {
-                $newRevision->previous()->associate($this->revision()->get());
+                $newRevision->previous_revision_id = $this->revision->id;
             }
             $this->fill($this->getOriginal());
             $this->handleMeta();
