@@ -4,6 +4,7 @@ namespace Plank\Checkpoint;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
+use Plank\Checkpoint\Commands\StartRevisioning;
 
 class VersionableServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,11 @@ class VersionableServiceProvider extends ServiceProvider
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
 
         if ($this->app->runningInConsole()) {
+
+            $this->commands([
+                StartRevisioning::class,
+            ]);
+
             $this->publishes([
                 __DIR__.'/../config/checkpoint.php' => config_path('checkpoint.php'),
             ], 'config');
