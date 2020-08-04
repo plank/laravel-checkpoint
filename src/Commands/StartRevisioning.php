@@ -15,7 +15,7 @@ class StartRevisioning extends Command
     protected $signature = 'checkpoint:start
                             {class? : a specified class to start revisioning on}
                             {--on= : The checkpoint ID that all revisions should be attached to}
-                            {--C|with-checkpoint} : also create a starting checkpoint to attach all revisions to';
+                            {--C|with-checkpoint : also create a starting checkpoint to attach all revisions to}';
 
     /**
      * The console command description.
