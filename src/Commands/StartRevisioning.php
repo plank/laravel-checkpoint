@@ -12,7 +12,10 @@ class StartRevisioning extends Command
      *
      * @var string
      */
-    protected $signature = 'checkpoint:start {class?}';
+    protected $signature = 'checkpoint:start
+                            {class? : a specified class to start revisioning on}
+                            {--on= : The checkpoint ID that all revisions should be attached to}
+                            {--C|with-checkpoint} : also create a starting checkpoint to attach all revisions to';
 
     /**
      * The console command description.
@@ -38,10 +41,18 @@ class StartRevisioning extends Command
      */
     public function handle()
     {
+        if ($this->option('with-checkpoint')) {
+            $checkpointClass = config('checkpoint.checkpoint_model');
+            $checkpoint = new $checkpointClass();
+            $checkpoint->save();
+            $checkpoint->refresh();
+        }
+
         if ($class = $this->argument('class')) {
-            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) {
+            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint) {
                foreach ($results as $item) {
                    $item->startRevisioning();
+                   $item->revision->checkpoint()->associate($checkpoint)->save();
                }
             });
         } else {
