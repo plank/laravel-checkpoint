@@ -82,7 +82,7 @@ trait HasRevisions
     public function makeRevision()
     {
         // If only unwatched columns are dirty, then don't do any versioning
-        if (array_diff(array_keys($this->getDirty()), $this->unwatchedColumns) !== []) {
+        if (array_diff(array_keys($this->getDirty()), $this->unwatched) !== []) {
             // Make sure we preserve the original
             $newItem = $this->replicate();
 

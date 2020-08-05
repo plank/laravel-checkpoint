@@ -36,7 +36,7 @@ trait StoresMeta
     private function handleMeta(&$revision = null)
     {
         $meta = collect();
-        foreach ($this->metaAttributes as $attribute) {
+        foreach ($this->meta as $attribute) {
             $meta[$attribute] = $this->$attribute;
             $this->$attribute = null;
         }
@@ -56,7 +56,7 @@ trait StoresMeta
     public function getAttribute($key)
     {
         $value = parent::getAttribute($key);
-        if (!$value && in_array($key, $this->metaAttributes)) {
+        if (!$value && in_array($key, $this->meta)) {
             return json_decode($this->revision->metadata)->$key;
         }
 
