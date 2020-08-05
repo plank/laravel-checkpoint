@@ -57,6 +57,10 @@ class VersionableServiceProvider extends ServiceProvider
 
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->publishes([
+            __DIR__.'/../database/migrations/' => database_path('migrations'),
+        ], 'checkpoint-migrations');
+
 /*        if (empty(File::glob(database_path('migrations/*_create_checkpoints_table.php')))) {
             $timestamp = date('Y_m_d_His');
             $migration = database_path("migrations/{$timestamp}_create_checkpoints_table.php");
