@@ -19,16 +19,6 @@ trait StoresMeta
      */
     public $meta = [];
 
-    /**
-     * Override model constructor to register meta attributes,
-     * but make sure to call the Model constructor.
-     * @param array $attributes
-     */
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->meta = $this->registerMetaAttributes();
-    }
 
     /**
      * Moves data in columns specified in $metaAttributes from the model the revision
@@ -69,6 +59,7 @@ trait StoresMeta
      */
     public function registerMetaAttributes(): array
     {
+        dump('does this fire? - Meta');
         return [];
     }
 }

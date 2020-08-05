@@ -19,10 +19,16 @@ trait HasRevisions
 
     public $unwatched = [];
 
+    /**
+     * Override model constructor to register meta attributes,
+     * but make sure to call the Model constructor.
+     * @param array $attributes
+     */
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
         $this->unwatched = $this->registerUnwatchedColumns();
+        $this->meta = $this->registerMetaAttributes();
     }
 
     /**
