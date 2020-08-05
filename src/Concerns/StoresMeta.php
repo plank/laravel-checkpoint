@@ -2,18 +2,32 @@
 
 namespace Plank\Checkpoint\Concerns;
 
+/**
+ * Trait StoresMeta
+ *
+ * Allows saving specific columns onto the revision metadata field and ensures the
+ * model can retrieve those columns from meta if they don't exist in the main table.
+ * Mainly used for columns that cannot contain duplicate entries (ex: ordering)
+ *
+ * @package Plank\Checkpoint\Concerns
+ */
 trait StoresMeta
 {
-    public $metaAttributes = [];
+    /**
+     *
+     * @var array
+     */
+    public $meta = [];
 
     /**
-     * Override model constructor to register media attributes, but make sure to call the Model constructor.
+     * Override model constructor to register meta attributes,
+     * but make sure to call the Model constructor.
      * @param array $attributes
      */
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->metaAttributes = $this->registerMetaAttributes();
+        $this->meta = $this->registerMetaAttributes();
     }
 
     /**

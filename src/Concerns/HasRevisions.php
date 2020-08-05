@@ -2,17 +2,10 @@
 
 namespace Plank\Checkpoint\Concerns;
 
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
-use Illuminate\Support\Facades\Event;
-use Plank\Checkpoint\Scopes\CheckpointScope;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Exception;
 use Closure;
-use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Plank\Checkpoint\Models\Checkpoint;
+use Exception;
 use Plank\Checkpoint\Models\Revision;
-use Illuminate\Database\Eloquent\Builder;
+use Plank\Checkpoint\Scopes\RevisionScope;
 
 /**
  * @package Plank\Versionable\Concerns
@@ -21,14 +14,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 trait HasRevisions
 {
+    use HasCheckpointRelations;
     use StoresMeta;
 
-    public $unwatchedColumns;
+    public $unwatched = [];
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->unwatchedColumns = $this->registerUnwatchedColumns();
+        $this->unwatched = $this->registerUnwatchedColumns();
     }
 
     /**
@@ -38,7 +32,7 @@ trait HasRevisions
      */
     public static function bootHasRevisions(): void
     {
-        static::addGlobalScope(new CheckpointScope());
+        static::addGlobalScope(new RevisionScope());
 
         // hook newVersion onto all relevant events
         // On Create, Update, Delete, Restore : make new revisions...
@@ -80,102 +74,6 @@ trait HasRevisions
     public static function versioned($callback): void
     {
         static::registerModelEvent('versioned', $callback);
-    }
-
-    //////// START RELATIONS
-
-    /**
-     * Get the revision representing this model
-     *
-     * @return MorphOne
-     */
-    public function revision(): MorphOne
-    {
-        $model = config('checkpoint.revision_model', Revision::class);
-        return $this->morphOne($model, 'revisionable');
-    }
-
-    /**
-     * Get all revisions representing this model
-     *
-     * @return MorphOneOrMany
-     */
-    public function revisions(): MorphOneOrMany
-    {
-        //todo
-        $model = config('checkpoint.revision_model', Revision::class);
-        return $this->morphMany($model, 'revisionable', 'revisionable_type', 'original_revisionable_id');
-    }
-
-
-    /**
-     * Return the checkpoint that this model belongs to
-     * @return hasOneThrough
-     */
-    public function checkpoint(): hasOneThrough
-    {
-        $revision = config('checkpoint.revision_model', Revision::class);
-        $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
-        return $this->hasOneThrough(
-            $checkpoint,
-            $revision,
-            'revisionable_id',
-            'id',
-            'id',
-            'checkpoint_id'
-        )
-            ->where('revisionable_type', self::class);
-    }
-
-
-    /**
-     * Get the previous instance of this model
-     *
-     * @return MorphTo
-     */
-    public function previous(): MorphTo
-    {
-        return $this->revision->previous->revisionable();
-    }
-
-    /**
-     * Get the next instance of this model
-     *
-     * @return MorphTo
-     */
-    public function next(): MorphTo
-    {
-        return $this->revision->next->revisionable();
-    }
-
-    public function getOriginalIdAttribute()
-    {
-        return $this->revision->original_revisionable_id;
-    }
-
-    /**
-     * Filter by a release; gets all the versions of a model from a given release or earlier.
-     * @param Builder $q
-     * @param Checkpoint $v
-     * @return Builder
-     */
-    public function scopeLatestBefore(Builder $q, Checkpoint $c = null)
-    {
-        if ($c) {
-            $previousCheckpoints = Checkpoint::where('checkpoint_date', '<=' ,$c->checkpoint_date)->pluck('id');
-            return $q
-                ->whereHas('revision', function (Builder $query) use ($previousCheckpoints) {
-                    $query
-                        // or do a select before instead of whereRaw?
-                        ->whereRaw('`revisions`.`created_at` in (SELECT DISTINCT max(created_at) FROM revisions GROUP BY original_revisionable_id)')
-                        ->whereIn('checkpoint_id', $previousCheckpoints);
-                });
-        } else {
-            return $q
-                ->whereHas('revision', function (Builder $query) {
-                    $query->where('latest', true);
-                });
-        }
     }
 
     /**

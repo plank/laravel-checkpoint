@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Scope;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 
-class CheckpointScope implements Scope
+class RevisionScope implements Scope
 {
     /**
      * All of the extensions to be added to the builder.

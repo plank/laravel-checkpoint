@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 class Revision extends MorphPivot
@@ -57,20 +58,28 @@ class Revision extends MorphPivot
      *
      * @var array
      */
-    protected $guarded = ['id', 'previous_revision_id', 'metadata'];
+    protected $guarded = [
+        'id',
+        'previous_revision_id',
+        'metadata'
+    ];
 
     /**
      * Retrieve the revisioned model associated with this entry
+     *
+     * @return MorphTo
      */
-    public function revisionable()
+    public function revisionable(): MorphTo
     {
         return $this->morphTo('revisionable');
     }
 
     /**
      * Retrieve the original model in this sequence
+     *
+     * @return MorphTo
      */
-    public function original()
+    public function original(): MorphTo
     {
         return $this->morphTo('revisionable', 'revisionable_type', 'original_revisionable_id');
     }
