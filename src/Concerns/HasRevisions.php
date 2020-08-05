@@ -6,6 +6,9 @@ use Closure;
 use Exception;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Scopes\RevisionScope;
+use Neurony\Duplicate\Traits\HasDuplicates;
+use Neurony\Duplicate\Options\DuplicateOptions;
+use ReflectionClass;
 
 /**
  * @package Plank\Versionable\Concerns
@@ -15,7 +18,19 @@ use Plank\Checkpoint\Scopes\RevisionScope;
 trait HasRevisions
 {
     use HasCheckpointRelations;
+    use HasDuplicates;
     use StoresMeta;
+
+    /**
+     * Get the options for duplicating the model.
+     *
+     * @return DuplicateOptions
+     */
+    public function getDuplicateOptions(): DuplicateOptions
+    {
+        $reflection = new ReflectionClass(HasCheckpointRelations::class);
+        return DuplicateOptions::instance()->excludeRelations(collect($reflection->getMethods())->pluck('name'));
+    }
 
     public $unwatched = [];
 
@@ -83,35 +98,52 @@ trait HasRevisions
     }
 
     /**
+     * Make sure that revisioning should be done before proceeding
+     * Override and add any conditions your use cases may require
+     *
+     * @return bool
+     */
+    public function shouldRevision(): bool
+    {
+        // Are only unwatched columns are dirty?
+        if (empty(array_diff(array_keys($this->getDirty()), $this->unwatched))) {
+            return false;
+        }
+
+
+        return true;
+    }
+
+    /**
      *  each link to a release contains metadata that can be used to build a previous version of given model
+     *
+     * @throws Exception
      */
     public function makeRevision()
     {
-        // If only unwatched columns are dirty, then don't do any versioning
-        if (array_diff(array_keys($this->getDirty()), $this->unwatched) !== []) {
-            // Make sure we preserve the original
-            $newItem = $this->replicate();
+        if ($this->shouldRevision()) {
 
-            // Duplicate relationships as well - but make sure we attach only the latest version of something
-//            foreach ($this->getRelations() as $relation => $item) {
-//                $version->setRelation($relation, $item/*->latestBefore()*/);
-//            }
+            try {
+                $this->getConnection()->transaction(function () {
+                    // Deep duplicate using neurony/laravel-duplicate
+                    $duplicate = $this->saveAsDuplicate();
 
-            // Store the new version
-            $newItem->save();
-            $this->fill($this->getOriginal());
+                    // Update the revision of the duplicate with the correct data.
+                    $revision = $duplicate->revision;
+                    $revision->revisionable()->associate($duplicate);
+                    $revision->original_revisionable_id = $this->revision->original_revisionable_id;
+                    $revision->previous_revision_id = $this->revision->id;
+                    $revision->saveOrFail();
 
-            // Set our needed "pivot" data
-            $model = config('checkpoint.revision_model', Revision::class);
-            $newRevision = $newItem->revision;
-            $newRevision->revisionable()->associate($newItem);
-            $newRevision->original_revisionable_id = $this->revision->original_revisionable_id;
-            $newRevision->previous_revision_id = $this->revision->id;
+                    // Reset the original model to original data
+                    $this->fill($this->getOriginal());
 
-            $this->fill($this->getOriginal());
-            $this->handleMeta();
-
-            $newRevision->save();
+                    // Handle unique columns
+                    $this->handleMeta();
+                });
+            } catch (Exception $e) {
+                throw $e;
+            }
         }
 
     }

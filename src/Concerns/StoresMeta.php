@@ -34,7 +34,6 @@ trait StoresMeta
         $revision->latest = false;
         $revision->metadata = $meta->toJson();
         $revision->save();
-
     }
 
     /**

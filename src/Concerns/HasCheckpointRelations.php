@@ -39,7 +39,7 @@ trait HasCheckpointRelations
      *
      * @return MorphOneOrMany
      */
-    public function revisions(): MorphOneOrMany
+    public function revisions()
     {
         //todo
         //$model = config('checkpoint.revision_model', Revision::class);
