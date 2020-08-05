@@ -3,16 +3,16 @@
 namespace Plank\Versionable\Tests;
 
 use Orchestra\Testbench\TestCase;
-use Plank\Versionable\VersionableServiceProvider;
+use Plank\Checkpoint\CheckpointServiceProvider;
 
 class ExampleTest extends TestCase
 {
 
     protected function getPackageProviders($app)
     {
-        return [VersionableServiceProvider::class];
+        return [CheckpointServiceProvider::class];
     }
-    
+
     /** @test */
     public function true_is_true()
     {

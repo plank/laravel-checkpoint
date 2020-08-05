@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\ServiceProvider;
 use Plank\Checkpoint\Commands\StartRevisioning;
 
-class VersionableServiceProvider extends ServiceProvider
+class CheckpointServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
@@ -57,6 +57,7 @@ class VersionableServiceProvider extends ServiceProvider
 
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
         $this->publishes([
             __DIR__.'/../database/migrations/' => database_path('migrations'),
         ], 'checkpoint-migrations');

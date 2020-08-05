@@ -53,7 +53,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Plank\\Checkpoint\\VersionableServiceProvider"
+                "Plank\\Checkpoint\\CheckpointServiceProvider"
             ]
         }
     }
