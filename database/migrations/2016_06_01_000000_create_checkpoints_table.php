@@ -14,7 +14,7 @@ class CreateCheckpointsTable extends Migration
     public function up()
     {
         Schema::create('checkpoints', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');
             $table->string('title');
             $table->dateTime('checkpoint_date');
             $table->timestamps();

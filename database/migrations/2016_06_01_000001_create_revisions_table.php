@@ -16,7 +16,7 @@ class CreateRevisionsTable extends Migration
     {
         Schema::create('revisions',
             function (Blueprint $table) {
-                $table->id();
+                $table->bigIncrements('id');
                 $table->morphs('revisionable');
                 $table->unsignedBigInteger('original_revisionable_id');
                 $table->boolean('latest')->default(true);
