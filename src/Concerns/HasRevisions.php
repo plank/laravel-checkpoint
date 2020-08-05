@@ -3,6 +3,7 @@
 namespace Plank\Checkpoint\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Support\Facades\Event;
 use Plank\Checkpoint\Scopes\CheckpointScope;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Exception;
@@ -47,7 +48,6 @@ trait HasRevisions
         });
 
         static::updating(function (self $model) {
-            //if (array_intersect(array_keys($model->getDirty())) {
             $model->makeRevision();
         });
 
@@ -194,17 +194,16 @@ trait HasRevisions
 //            }
 
             // Store the new version
-            $newItem->saveWithoutEvents();
+            $newItem->save();
             $this->fill($this->getOriginal());
 
             // Set our needed "pivot" data
             $model = config('checkpoint.revision_model', Revision::class);
-            $newRevision = new $model;
+            $newRevision = $newItem->revision;
             $newRevision->revisionable()->associate($newItem);
             $newRevision->original_revisionable_id = $this->revision->original_revisionable_id;
-            if ($this->revision()->exists()) {
-                $newRevision->previous_revision_id = $this->revision->id;
-            }
+            $newRevision->previous_revision_id = $this->revision->id;
+
             $this->fill($this->getOriginal());
             $this->handleMeta();
 
@@ -254,17 +253,5 @@ trait HasRevisions
     public function registerUnwatchedColumns(): array
     {
         return [];
-    }
-
-    /**
-     * Fire a save event for model, without triggering observers / events
-     * @param array $options
-     * @return mixed
-     */
-    private function saveWithoutEvents(array $options = [])
-    {
-        return static::withoutEvents(function() use ($options) {
-            return $this->save($options);
-        });
     }
 }
