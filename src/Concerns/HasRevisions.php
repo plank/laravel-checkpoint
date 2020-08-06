@@ -18,8 +18,30 @@ use Neurony\Duplicate\Options\DuplicateOptions;
 trait HasRevisions
 {
     use HasCheckpointRelations;
+    use StoresRevisionMeta;
     use HasDuplicates;
-    use StoresMeta;
+
+    /**
+     * Make sure that revisioning should be done before proceeding
+     * Override and add any conditions your use cases may require
+     *
+     * @return bool
+     */
+    public function shouldRevision(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Set a protected unwatched array on your model
+     * to skip revisioning on specific columns
+     *
+     * @return array
+     */
+    public function getUnwatched(): array
+    {
+        return $this->unwatched ?? [];
+    }
 
     /**
      * Boot the trait.
@@ -38,6 +60,7 @@ trait HasRevisions
         });
 
         static::updating(function (self $model) {
+            // Check if any column is dirty and filter out the unwatched fields
             if(!empty(array_diff(array_keys($model->getDirty()), $model->getUnwatched()))) {
                 $model->saveAsRevision();
             }
@@ -49,10 +72,13 @@ trait HasRevisions
             }
         });
 
-
         static::deleted(function (self $model) {
-            if ($model->forceDeleting !== false) {
-                //$model->deleteAllVersions();
+            if (method_exists($model, 'bootSoftDeletes')) {
+                if ($model->forceDeleting === true) {
+                    $model->revision()->delete();
+                }
+            } else {
+                $model->revision()->delete();
             }
         });
     }
@@ -88,17 +114,6 @@ trait HasRevisions
     {
         $reflection = new ReflectionClass(HasCheckpointRelations::class);
         return DuplicateOptions::instance()->excludeRelations(collect($reflection->getMethods())->pluck('name'));
-    }
-
-    /**
-     * Make sure that revisioning should be done before proceeding
-     * Override and add any conditions your use cases may require
-     *
-     * @return bool
-     */
-    public function shouldRevision(): bool
-    {
-        return true;
     }
 
     /**
@@ -138,58 +153,52 @@ trait HasRevisions
      */
     public function saveAsRevision()
     {
-        if ($this->shouldRevision() && !empty(array_diff(array_keys($this->getDirty()), $this->getUnwatched()))) {
+        if ($this->shouldRevision()) {
             try {
                 if ($this->fireModelEvent('revisioning') === false) {
                     return false;
                 }
 
-                $model = $this->getConnection()->transaction(function () {
+                $this->getConnection()->transaction(function () {
 
                     // Ensure that the original model has a revision
                     if ($this->revision()->doesntExist()) {
                         $this->updateOrCreateRevision();
                     }
 
+                    $this->withoutEvents(function () {
+                        // Deep duplicate using neurony/laravel-duplicate
+                        // NOTE: some unwanted relations could be duplicated, configurable with getDuplicateOptions()
+                        $copy = $this->saveAsDuplicate();
 
-                    // Deep duplicate using neurony/laravel-duplicate
-                    $copy = $this->saveAsDuplicate();
+                        // Reset the current model instance to original data
+                        $this->fill($this->getOriginal());
 
-                    // Reset the original model to original data
-                    $original = clone $this;
-                    $original->fill($this->getOriginal());
+                        //  Handle unique columns by storing them as meta on the revision itself
+                        $this->moveMetaToRevision();
 
-                    // Handle unique columns by storing them as meta on the revision itself
-                    $original->handleMeta();
+                        // Update the revision of the duplicate with the correct data.
+                        $copy->updateOrCreateRevision([
+                            'original_revisionable_id' => $this->revision->original_revisionable_id,
+                            'previous_revision_id' => $this->revision->id,
+                            'created_at' => $this->freshTimestampString(),
+                        ]);
 
-                    // Update the revision of the duplicate with the correct data.
-                    $copy->updateOrCreateRevision([
-                        'original_revisionable_id' => $this->revision->original_revisionable_id,
-                        'previous_revision_id' => $this->revision->id,
-                    ]);
-
-                    // Update returning object to use the keys of the duplicate
-                    self::unguard();
-                    $this->fill($copy->getAttributes());
-                    $this->syncOriginal();
-                    self::reguard();
-
-                    foreach ($this->getRelations() as $relation => $object) {
-                        $this->load($relation);
-                    }
-
-                    // Clear any other remaining attributes and cached relations from the original model
-                    return $this->refresh();
+                        // Point $this to the duplicate, unload its relations and refresh the object
+                        $this->setRawAttributes($copy->getAttributes());
+                        $this->relations = [];
+                        $this->refresh();
+                    });
                 });
 
                 $this->fireModelEvent('revisioned', false);
 
-                return $model;
+                return true;
             } catch (Exception $e) {
                 throw $e;
             }
         }
-        return true;
+        return false;
     }
 
     /**
@@ -219,6 +228,4 @@ trait HasRevisions
     {
 
     }
-
-    public abstract function getUnwatched(): array;
 }
