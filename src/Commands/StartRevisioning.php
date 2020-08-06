@@ -53,7 +53,7 @@ class StartRevisioning extends Command
             $timeDelta = 1;
             $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
                foreach ($results as $item) {
-                   $item->startRevisioning();
+                   $item->updateOrCreateRevision();
                    $revision = $item->revision;
                    $revision->created_at = $revision->created_at->addSeconds($timeDelta);
                    $revision->checkpoint()->associate($checkpoint);
