@@ -4,11 +4,11 @@ namespace Plank\Checkpoint\Concerns;
 
 use Closure;
 use Exception;
+use ReflectionClass;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Scopes\RevisionScope;
 use Neurony\Duplicate\Traits\HasDuplicates;
 use Neurony\Duplicate\Options\DuplicateOptions;
-use ReflectionClass;
 
 /**
  * @package Plank\Versionable\Concerns
@@ -28,7 +28,7 @@ trait HasRevisions
      */
     public static function bootHasRevisions(): void
     {
-        static::addGlobalScope(new RevisionScope());
+        static::addGlobalScope(new RevisionScope);
 
         // hook newVersion onto all relevant events
         // On Create, Update, Delete, Restore : make new revisions...
@@ -38,14 +38,21 @@ trait HasRevisions
         });
 
         static::updating(function (self $model) {
-            $model->saveAsRevision();
+            if(!empty(array_diff(array_keys($model->getDirty()), $model->unwatched))) {
+                $model->saveAsRevision();
+            }
         });
+
+         static::deleting(function (self $model) {
+            if (method_exists($model, 'bootSoftDeletes')) {
+                $model->saveAsRevision();
+            }
+        });
+
 
         static::deleted(function (self $model) {
             if ($model->forceDeleting !== false) {
-                $model->deleteAllVersions();
-            } else {
-                $model->saveAsRevision();
+                //$model->deleteAllVersions();
             }
         });
     }
@@ -126,6 +133,8 @@ trait HasRevisions
      *  each link to a release contains metadata that can be used to build a previous version of given model
      *
      * @throws Exception
+     *
+     * @return bool
      */
     public function saveAsRevision()
     {
@@ -136,13 +145,22 @@ trait HasRevisions
                 }
 
                 $model = $this->getConnection()->transaction(function () {
+
                     // Ensure that the original model has a revision
                     if ($this->revision()->doesntExist()) {
                         $this->updateOrCreateRevision();
                     }
 
+
                     // Deep duplicate using neurony/laravel-duplicate
                     $copy = $this->saveAsDuplicate();
+
+                    // Reset the original model to original data
+                    $original = clone $this;
+                    $original->fill($this->getOriginal());
+
+                    // Handle unique columns by storing them as meta on the revision itself
+                    $original->handleMeta();
 
                     // Update the revision of the duplicate with the correct data.
                     $copy->updateOrCreateRevision([
@@ -150,13 +168,14 @@ trait HasRevisions
                         'previous_revision_id' => $this->revision->id,
                     ]);
 
-                    // Reset the original model to original data
-                    $this->fill($this->getOriginal());
+                    // Update returning object to use the keys of the duplicate
+                    self::unguard();
+                    $this->fill($copy->getAttributes());
+                    $this->syncOriginal();
+                    self::reguard();
 
-                    // Handle unique columns by storing them as meta on the revision itself
-                    $this->handleMeta();
-
-                    return $copy;
+                    // Clear any other remaining attributes and cached relations from the original model
+                    return $this->refresh();
                 });
 
                 $this->fireModelEvent('revisioned', false);
@@ -166,6 +185,7 @@ trait HasRevisions
                 throw $e;
             }
         }
+        return true;
     }
 
     /**

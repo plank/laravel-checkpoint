@@ -46,16 +46,6 @@ class RevisionScope implements Scope
         foreach ($this->extensions as $extension) {
             $this->{"add{$extension}"}($builder);
         }
-
-        // creating new drafts can be done here instead of observer.
-
-        /*        $builder->onDelete(function (Builder $builder) {
-                    $column = $this->getDeletedAtColumn($builder);
-
-                    return $builder->update([
-                        $column => $builder->getModel()->freshTimestampString(),
-                    ]);
-                });*/
     }
 
 
