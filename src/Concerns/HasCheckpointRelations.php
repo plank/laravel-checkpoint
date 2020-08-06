@@ -83,9 +83,9 @@ trait HasCheckpointRelations
      *
      * @return MorphTo
      */
-    public function original(): MorphTo
+    public function initialRevision(): MorphTo
     {
-        return $this->revision->original->revisionable();
+        return $this->revision->initial->revisionable();
     }
 
 }

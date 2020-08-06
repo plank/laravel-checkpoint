@@ -22,29 +22,9 @@ trait HasRevisions
     use StoresMeta;
 
     /**
-     * Get the options for duplicating the model.
-     *
-     * @return DuplicateOptions
+     * @var array of columns that won't trigger a new revision
      */
-    public function getDuplicateOptions(): DuplicateOptions
-    {
-        $reflection = new ReflectionClass(HasCheckpointRelations::class);
-        return DuplicateOptions::instance()->excludeRelations(collect($reflection->getMethods())->pluck('name'));
-    }
-
     public $unwatched = [];
-
-    /**
-     * Override model constructor to register meta attributes,
-     * but make sure to call the Model constructor.
-     * @param array $attributes
-     */
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->unwatched = $this->registerUnwatchedColumns();
-        $this->meta = $this->registerMetaAttributes();
-    }
 
     /**
      * Boot the trait.
@@ -59,42 +39,53 @@ trait HasRevisions
         // On Create, Update, Delete, Restore : make new revisions...
 
         static::created(function (self $model) {
-            $model->startRevisioning();
+            $model->updateOrCreateRevision();
         });
 
         static::updating(function (self $model) {
-            $model->makeRevision();
+            $model->saveAsRevision();
         });
 
         static::deleted(function (self $model) {
             if ($model->forceDeleting !== false) {
                 $model->deleteAllVersions();
             } else {
-                $model->makeRevision();
+                $model->saveAsRevision();
             }
         });
     }
 
     /**
-     * Register a versioning model event with the dispatcher.
+     * Register a revisioning model event with the dispatcher.
      *
      * @param Closure|string $callback
      * @return void
      */
-    public static function versioning($callback): void
+    public static function revisioning($callback): void
     {
-        static::registerModelEvent('versioning', $callback);
+        static::registerModelEvent('revisioning', $callback);
     }
 
     /**
-     * Register a versioned model event with the dispatcher.
+     * Register a revisioned model event with the dispatcher.
      *
      * @param Closure|string $callback
      * @return void
      */
-    public static function versioned($callback): void
+    public static function revisioned($callback): void
     {
-        static::registerModelEvent('versioned', $callback);
+        static::registerModelEvent('revisioned', $callback);
+    }
+
+    /**
+     * Override the duplicate package options to ignore certain relations.
+     *
+     * @return DuplicateOptions
+     */
+    public function getDuplicateOptions(): DuplicateOptions
+    {
+        $reflection = new ReflectionClass(HasCheckpointRelations::class);
+        return DuplicateOptions::instance()->excludeRelations(collect($reflection->getMethods())->pluck('name'));
     }
 
     /**
@@ -105,13 +96,35 @@ trait HasRevisions
      */
     public function shouldRevision(): bool
     {
-        // Are only unwatched columns are dirty?
-        if (empty(array_diff(array_keys($this->getDirty()), $this->unwatched))) {
-            return false;
+        return true;
+    }
+
+    /**
+     * Update or Create the revision for this model
+     *
+     * @param  array  $values
+     *
+     * @return bool|\Illuminate\Database\Eloquent\Model
+     */
+    public function updateOrCreateRevision($values = [])
+    {
+        if ($this->shouldRevision()) {
+            if ($this->revision()->exists()) {
+                $search = $this->revision->toArray();
+            } else {
+                $search = [
+                    'revisionable_id' => $this->id,
+                    'revisionable_type' => self::class,
+                    'original_revisionable_id' => $this->id,
+                ];
+            }
+            // when values is empty, we want to write in the data as used for lookup
+            $values = empty($values) ? $search : $values;
+
+            return $this->revision()->updateOrCreate($search, $values);
         }
 
-
-        return true;
+        return false;
     }
 
     /**
@@ -119,43 +132,45 @@ trait HasRevisions
      *
      * @throws Exception
      */
-    public function makeRevision()
+    public function saveAsRevision()
     {
-        if ($this->shouldRevision()) {
-
+        if ($this->shouldRevision() && !empty(array_diff(array_keys($this->getDirty()), $this->unwatched))) {
             try {
-                $this->getConnection()->transaction(function () {
+                if ($this->fireModelEvent('revisioning') === false) {
+                    return false;
+                }
+
+                $model = $this->getConnection()->transaction(function () {
+                    // Ensure that the original model has a revision
+                    if ($this->revision()->doesntExist()) {
+                        $this->updateOrCreateRevision();
+                    }
+
                     // Deep duplicate using neurony/laravel-duplicate
-                    $duplicate = $this->saveAsDuplicate();
+                    $copy = $this->saveAsDuplicate();
 
                     // Update the revision of the duplicate with the correct data.
-                    $revision = $duplicate->revision;
-                    $revision->revisionable()->associate($duplicate);
-                    $revision->original_revisionable_id = $this->revision->original_revisionable_id;
-                    $revision->previous_revision_id = $this->revision->id;
-                    $revision->saveOrFail();
+                    $copy->updateOrCreateRevision([
+                        'original_revisionable_id' => $this->revision->original_revisionable_id,
+                        'previous_revision_id' => $this->revision->id,
+                    ]);
 
                     // Reset the original model to original data
                     $this->fill($this->getOriginal());
 
-                    // Handle unique columns
+                    // Handle unique columns by storing them as meta on the revision itself
                     $this->handleMeta();
+
+                    return $copy;
                 });
+
+                $this->fireModelEvent('revisioned', false);
+
+                return $model;
             } catch (Exception $e) {
                 throw $e;
             }
         }
-
-    }
-
-    public function startRevisioning()
-    {
-        $model = config('checkpoint.revision_model', Revision::class);
-        $revision = new $model;
-        $revision->revisionable()->associate($this);
-        $revision->original_revisionable_id = $this->id;
-
-        $revision->save();
     }
 
     /**
@@ -184,10 +199,5 @@ trait HasRevisions
     public function deleteAllRevisions(): void
     {
 
-    }
-
-    public function registerUnwatchedColumns(): array
-    {
-        return [];
     }
 }
