@@ -17,7 +17,7 @@ trait StoresMeta
      *
      * @var array
      */
-    public $meta = [];
+    public $meta;
 
 
     /**
@@ -53,12 +53,8 @@ trait StoresMeta
 
     }
 
-    /**
-     * @return array
-     */
     public function registerMetaAttributes(): array
     {
-        dump('does this fire? - Meta');
         return [];
     }
 }

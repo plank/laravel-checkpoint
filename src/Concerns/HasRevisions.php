@@ -24,7 +24,14 @@ trait HasRevisions
     /**
      * @var array of columns that won't trigger a new revision
      */
-    public $unwatched = [];
+    public $unwatched;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->meta = $this->registerMetaAttributes();
+        $this->unwatched = $this->registerUnwatchedColumns();
+    }
 
     /**
      * Boot the trait.
@@ -199,5 +206,10 @@ trait HasRevisions
     public function deleteAllRevisions(): void
     {
 
+    }
+
+    public function registerUnwatchedColumns(): array
+    {
+        return [];
     }
 }
