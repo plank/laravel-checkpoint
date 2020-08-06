@@ -174,6 +174,10 @@ trait HasRevisions
                     $this->syncOriginal();
                     self::reguard();
 
+                    foreach ($this->getRelations() as $relation => $object) {
+                        $this->load($relation);
+                    }
+
                     // Clear any other remaining attributes and cached relations from the original model
                     return $this->refresh();
                 });
