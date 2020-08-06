@@ -39,7 +39,7 @@ trait StoresMeta
     public function getAttribute($key)
     {
         $value = parent::getAttribute($key);
-        if (!$value && in_array($key, $this->meta)) {
+        if (!$value && in_array($key, $this->getMeta())) {
             return json_decode($this->revision->metadata)->$key;
         }
 

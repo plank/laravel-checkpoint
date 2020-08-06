@@ -38,7 +38,7 @@ trait HasRevisions
         });
 
         static::updating(function (self $model) {
-            if(!empty(array_diff(array_keys($model->getDirty()), $model->unwatched))) {
+            if(!empty(array_diff(array_keys($model->getDirty()), $model->getUnwatched()))) {
                 $model->saveAsRevision();
             }
         });
