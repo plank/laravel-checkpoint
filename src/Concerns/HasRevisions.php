@@ -22,18 +22,6 @@ trait HasRevisions
     use StoresMeta;
 
     /**
-     * @var array of columns that won't trigger a new revision
-     */
-    public $unwatched;
-
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->meta = $this->registerMetaAttributes();
-        $this->unwatched = $this->registerUnwatchedColumns();
-    }
-
-    /**
      * Boot the trait.
      *
      * @return void
@@ -141,7 +129,7 @@ trait HasRevisions
      */
     public function saveAsRevision()
     {
-        if ($this->shouldRevision() && !empty(array_diff(array_keys($this->getDirty()), $this->unwatched))) {
+        if ($this->shouldRevision() && !empty(array_diff(array_keys($this->getDirty()), $this->getUnwatched()))) {
             try {
                 if ($this->fireModelEvent('revisioning') === false) {
                     return false;
@@ -208,8 +196,5 @@ trait HasRevisions
 
     }
 
-    public function registerUnwatchedColumns(): array
-    {
-        return [];
-    }
+    public abstract function getUnwatched(): array;
 }

@@ -13,12 +13,6 @@ namespace Plank\Checkpoint\Concerns;
  */
 trait StoresMeta
 {
-    /**
-     *
-     * @var array
-     */
-    public $meta;
-
 
     /**
      * Moves data in columns specified in $metaAttributes from the model the revision
@@ -26,7 +20,7 @@ trait StoresMeta
     private function handleMeta(&$revision = null)
     {
         $meta = collect();
-        foreach ($this->meta as $attribute) {
+        foreach ($this->getMeta() as $attribute) {
             $meta[$attribute] = $this->$attribute;
             $this->$attribute = null;
         }
@@ -53,8 +47,5 @@ trait StoresMeta
 
     }
 
-    public function registerMetaAttributes(): array
-    {
-        return [];
-    }
+    public abstract function getMeta(): array;
 }
