@@ -7,8 +7,7 @@ use Exception;
 use ReflectionClass;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Scopes\RevisionScope;
-use Neurony\Duplicate\Traits\HasDuplicates;
-use Neurony\Duplicate\Options\DuplicateOptions;
+use Plank\Checkpoint\Helpers\RelationHelper;
 
 /**
  * @package Plank\Versionable\Concerns
@@ -19,7 +18,6 @@ trait HasRevisions
 {
     use HasCheckpointRelations;
     use StoresRevisionMeta;
-    use HasDuplicates;
 
     /**
      * Make sure that revisioning should be done before proceeding.
@@ -51,7 +49,9 @@ trait HasRevisions
      */
     public function getExcludedRelations(): array
     {
-        return $this->exludedRelations ?? [];
+        $reflection = new ReflectionClass(HasCheckpointRelations::class);
+        $default = collect($reflection->getMethods())->pluck('name')->toArray();
+        return array_merge($default, $this->excludedRelations ?? []);
     }
 
     /**
@@ -84,11 +84,7 @@ trait HasRevisions
         });
 
         static::deleted(function (self $model) {
-            if (method_exists($model, 'bootSoftDeletes')) {
-                if ($model->forceDeleting === true) {
-                    $model->revision()->delete();
-                }
-            } else {
+            if (!method_exists($model, 'bootSoftDeletes') || $model->forceDeleting === true) {
                 $model->revision()->delete();
             }
         });
@@ -114,18 +110,6 @@ trait HasRevisions
     public static function revisioned($callback): void
     {
         static::registerModelEvent('revisioned', $callback);
-    }
-
-    /**
-     * Override the duplicate package options to ignore certain relations.
-     *
-     * @return DuplicateOptions
-     */
-    public function getDuplicateOptions(): DuplicateOptions
-    {
-        $reflection = new ReflectionClass(HasCheckpointRelations::class);
-        $default = collect($reflection->getMethods())->pluck('name');
-        return DuplicateOptions::instance()->excludeRelations($default->merge($this->getExcludedRelations()));
     }
 
     /**
@@ -177,9 +161,36 @@ trait HasRevisions
                         $this->updateOrCreateRevision();
                     }
 
-                    // Deep duplicate using neurony/laravel-duplicate
-                    // NOTE: some unwanted relations could be duplicated, configurable with getDuplicateOptions()
-                    $copy = $this->saveAsDuplicate();
+                    // Replicate the current object
+                    $copy = $this->replicate();
+                    $copy->save();
+
+                    // Reattach relations to this object
+                    $excludedRelations = $this->getExcludedRelations();
+                    foreach (RelationHelper::getModelRelations($this) as $relation => $attributes) {
+                        if (!in_array($relation, $excludedRelations, true)) {
+                            if (RelationHelper::isChild($attributes['type'])) {
+                                foreach ($this->$relation()->get() as $child) {
+                                    if (method_exists($child, 'bootHasRevisions')) {
+                                        // Revision the child model by attaching it to our new copy
+                                        $foreignKey = $this->$relation()->getForeignKeyName();
+                                        $child->$foreignKey = $copy->getKey();
+                                        $child->save();
+                                    } else {
+                                        $copy->$relation()->save($child->replicate());
+                                    }
+                                }
+                            } elseif (RelationHelper::isPivoted($attributes['type'])) {
+                                foreach ($this->$relation()->get() as $item) {
+                                    $copy->$relation()->attach($item);
+                                }
+                            } else {
+                                logger()->debug('skipping duplication of: ' . $attributes['type']);
+                            }
+                        }
+                    }
+
+                    // Save the duplicate and its relations
 
                     // Reset the current model instance to original data
                     $this->fill($this->getOriginal());

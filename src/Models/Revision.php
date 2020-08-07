@@ -70,7 +70,7 @@ class Revision extends MorphPivot
      */
     public function revisionable(): MorphTo
     {
-        return $this->morphTo('revisionable');
+        return $this->morphTo('revisionable')->withoutGlobalScopes();
     }
 
     /**
@@ -131,8 +131,7 @@ class Revision extends MorphPivot
      */
     public function allRevisions(): HasMany
     {
-        return $this
-            ->hasMany(self::class, 'revisionable_type', 'revisionable_type')
+        return $this->hasMany(self::class, 'revisionable_type', 'revisionable_type')
             ->where('original_revisionable_id', $this->original_revisionable_id);
     }
 
@@ -160,7 +159,7 @@ class Revision extends MorphPivot
 
         if ($until instanceof Checkpoint) {
             $q->whereIn('checkpoint_id', $checkpoint::select('id')
-                    ->where('checkpoint_date', '<=' , $until->checkpoint_date)
+                ->where('checkpoint_date', '<=' , $until->checkpoint_date)
             );
         } elseif ($until !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '<=', Carbon::parse($until));
