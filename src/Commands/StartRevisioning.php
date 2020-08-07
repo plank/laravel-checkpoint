@@ -58,7 +58,7 @@ class StartRevisioning extends Command
                    $revision->created_at = $revision->created_at->addSeconds($timeDelta);
                    $revision->checkpoint()->associate($checkpoint);
                    $revision->save();
-                   $timeDelta++;
+                   $timeDelta--;
                }
             });
         } else {
