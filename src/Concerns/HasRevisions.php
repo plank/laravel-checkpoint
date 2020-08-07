@@ -166,29 +166,27 @@ trait HasRevisions
                         $this->updateOrCreateRevision();
                     }
 
-                    $this->withoutEvents(function () {
-                        // Deep duplicate using neurony/laravel-duplicate
-                        // NOTE: some unwanted relations could be duplicated, configurable with getDuplicateOptions()
-                        $copy = $this->saveAsDuplicate();
+                    // Deep duplicate using neurony/laravel-duplicate
+                    // NOTE: some unwanted relations could be duplicated, configurable with getDuplicateOptions()
+                    $copy = $this->saveAsDuplicate();
 
-                        // Reset the current model instance to original data
-                        $this->fill($this->getOriginal());
+                    // Reset the current model instance to original data
+                    $this->fill($this->getOriginal());
 
-                        //  Handle unique columns by storing them as meta on the revision itself
-                        $this->moveMetaToRevision();
+                    //  Handle unique columns by storing them as meta on the revision itself
+                    $this->moveMetaToRevision();
 
-                        // Update the revision of the duplicate with the correct data.
-                        $copy->updateOrCreateRevision([
-                            'original_revisionable_id' => $this->revision->original_revisionable_id,
-                            'previous_revision_id' => $this->revision->id,
-                            'created_at' => $this->freshTimestampString(),
-                        ]);
+                    // Update the revision of the duplicate with the correct data.
+                    $copy->updateOrCreateRevision([
+                        'original_revisionable_id' => $this->revision->original_revisionable_id,
+                        'previous_revision_id' => $this->revision->id,
+                        'created_at' => $this->freshTimestampString(),
+                    ]);
 
-                        // Point $this to the duplicate, unload its relations and refresh the object
-                        $this->setRawAttributes($copy->getAttributes());
-                        $this->relations = [];
-                        $this->refresh();
-                    });
+                    // Point $this to the duplicate, unload its relations and refresh the object
+                    $this->setRawAttributes($copy->getAttributes());
+                    $this->relations = [];
+                    $this->refresh();
                 });
 
                 $this->fireModelEvent('revisioned', false);

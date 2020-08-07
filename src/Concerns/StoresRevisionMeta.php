@@ -40,8 +40,10 @@ trait StoresRevisionMeta
             $revision = $revision ?? $this->revision;
             $revision->latest = false;
             $revision->metadata = $meta->toJson();
-            $revision->save();
-            $this->save(); // modified attributes, make sure this is saved without events
+            $this->withoutEvents(function () use ($revision){
+                $revision->save();
+                $this->save(); // modified attributes, make sure this is saved without events
+            });
         //}
     }
 
