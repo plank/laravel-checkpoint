@@ -22,8 +22,8 @@ trait HasRevisions
     use HasDuplicates;
 
     /**
-     * Make sure that revisioning should be done before proceeding
-     * Override and add any conditions your use cases may require
+     * Make sure that revisioning should be done before proceeding.
+     * Override and add any conditions your use cases may require.
      *
      * @return bool
      */
@@ -34,13 +34,24 @@ trait HasRevisions
 
     /**
      * Set a protected unwatched array on your model
-     * to skip revisioning on specific columns
+     * to skip revisioning on specific columns.
      *
      * @return array
      */
     public function getRevisionUnwatched(): array
     {
         return $this->unwatched ?? [];
+    }
+
+    /**
+     * Set the relationships to be ignored during duplication.
+     * Supply an array of relation method names.
+     *
+     * @return array
+     */
+    public function getExcludedRelations(): array
+    {
+        return $this->exludedRelations ?? [];
     }
 
     /**
@@ -113,11 +124,12 @@ trait HasRevisions
     public function getDuplicateOptions(): DuplicateOptions
     {
         $reflection = new ReflectionClass(HasCheckpointRelations::class);
-        return DuplicateOptions::instance()->excludeRelations(collect($reflection->getMethods())->pluck('name'));
+        $default = collect($reflection->getMethods())->pluck('name');
+        return DuplicateOptions::instance()->excludeRelations($default->merge($this->getExcludedRelations()));
     }
 
     /**
-     * Update or Create the revision for this model
+     * Update or Create the revision for this model.
      *
      * @param  array  $values
      *
@@ -145,11 +157,10 @@ trait HasRevisions
     }
 
     /**
-     *  each link to a release contains metadata that can be used to build a previous version of given model
-     *
-     * @throws Exception
+     * Each link to a release contains metadata that can be used to build a previous version of given model
      *
      * @return bool
+     * @throws \Throwable
      */
     public function saveAsRevision()
     {
@@ -180,7 +191,7 @@ trait HasRevisions
                     $copy->updateOrCreateRevision([
                         'original_revisionable_id' => $this->revision->original_revisionable_id,
                         'previous_revision_id' => $this->revision->id,
-                        'created_at' => $this->freshTimestampString(),
+                        //'created_at' => $this->freshTimestampString(),
                     ]);
 
                     // Point $this to the duplicate, unload its relations and refresh the object
