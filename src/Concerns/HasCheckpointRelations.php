@@ -62,7 +62,7 @@ trait HasCheckpointRelations
      *
      * @return MorphTo
      */
-    public function previous(): MorphTo
+    public function older(): MorphTo
     {
         return $this->revision->previous->revisionable();
     }
@@ -72,7 +72,7 @@ trait HasCheckpointRelations
      *
      * @return MorphTo
      */
-    public function next(): MorphTo
+    public function newer(): MorphTo
     {
         return $this->revision->next->revisionable();
     }
