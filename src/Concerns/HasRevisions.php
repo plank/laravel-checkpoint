@@ -38,7 +38,7 @@ trait HasRevisions
      *
      * @return array
      */
-    public function getUnwatched(): array
+    public function getRevisionUnwatched(): array
     {
         return $this->unwatched ?? [];
     }
@@ -61,7 +61,7 @@ trait HasRevisions
 
         static::updating(function (self $model) {
             // Check if any column is dirty and filter out the unwatched fields
-            if(!empty(array_diff(array_keys($model->getDirty()), $model->getUnwatched()))) {
+            if(!empty(array_diff(array_keys($model->getDirty()), $model->getRevisionUnwatched()))) {
                 $model->saveAsRevision();
             }
         });

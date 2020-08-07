@@ -21,7 +21,7 @@ trait StoresRevisionMeta
      */
     public function getRevisionMeta(): array
     {
-        return $this->revision_meta ?? $this->revisionMeta ?? [];
+        return $this->revisionMeta ?? [];
     }
 
     /**
