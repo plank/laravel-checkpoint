@@ -78,7 +78,7 @@ class RevisionScope implements Scope
             
             // METHOD 3 : Uses a where exists wrapper, laravel handles the revisionable id/type, use a whereIn subquery for timestamps
             $builder->whereHas('revision', function (Builder $query) use ($revision, $upper, $lower) {
-               $query->whereIn('revisions.created_at', $revision::timestamps($upper, $lower));
+               $query->whereIn((new $revision)->getQualifiedKeyName(), $revision::latestIds($upper, $lower));
             });
 
             return $builder;

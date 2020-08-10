@@ -151,13 +151,15 @@ class Revision extends MorphPivot
      * @param  Checkpoint|Carbon|string|null  $since
      * @return Builder
      */
-    public function scopeTimestamps(Builder $q, $until = null, $since = null) {
-        $q->withoutGlobalScopes()->distinct()->selectRaw("max({$this->getQualifiedCreatedAtColumn()}) as closest")
+    public function scopeLatestIds(Builder $q, $until = null, $since = null)
+    {
+        $q->withoutGlobalScopes()->selectRaw("max({$this->getQualifiedKeyName()}) as closest")
             ->groupBy(['original_revisionable_id', 'revisionable_type']);
 
         $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
 
         if ($until instanceof Checkpoint) {
+            // where in this checkpoint or one of the previous ones
             $q->whereIn('checkpoint_id', $checkpoint::select('id')
                 ->where('checkpoint_date', '<=' , $until->checkpoint_date)
             );
@@ -166,6 +168,7 @@ class Revision extends MorphPivot
         }
 
         if ($since instanceof Checkpoint) {
+            // where in this checkpoint or one of the following ones
             $q->whereIn('checkpoint_id', $checkpoint::select('id')
                 ->where('checkpoint_date', '>' , $since->checkpoint_date)
             );
