@@ -2,6 +2,7 @@
 
 namespace Plank\Checkpoint\Concerns;
 
+use Carbon\Carbon;
 use Closure;
 use Exception;
 use ReflectionClass;
@@ -44,6 +45,11 @@ trait HasRevisions
     public function getRevisionDefaults()
     {
         return $this->defaults ?? [];
+    }
+
+    public function applyCreatedAt()
+    {
+        return Carbon::now();
     }
 
     /**
@@ -208,7 +214,7 @@ trait HasRevisions
                     $copy->updateOrCreateRevision([
                         'original_revisionable_id' => $this->revision->original_revisionable_id,
                         'previous_revision_id' => $this->revision->id,
-                        //'created_at' => $this->freshTimestampString(),
+                        'created_at' => $copy->applyCreatedAt(),
                     ]);
 
                     // Point $this to the duplicate, unload its relations and refresh the object
