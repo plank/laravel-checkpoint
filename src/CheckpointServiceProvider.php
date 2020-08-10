@@ -18,7 +18,7 @@ class CheckpointServiceProvider extends ServiceProvider
          */
         // $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'checkpoint');
         // $this->loadViewsFrom(__DIR__.'/../resources/views', 'checkpoint');
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        //$this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         // $this->loadRoutesFrom(__DIR__.'/routes.php');
 
         if ($this->app->runningInConsole()) {
@@ -56,11 +56,11 @@ class CheckpointServiceProvider extends ServiceProvider
         }
 
 
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-
-        $this->publishes([
-            __DIR__.'/../database/migrations/' => database_path('migrations'),
-        ], 'checkpoint-migrations');
+        if (!class_exists(\CreateRevisionsTable::class) && !class_exists(\CreateCheckpointsTable::class)) {
+            $this->publishes([
+                __DIR__.'/../database/migrations/' => database_path('migrations'),
+            ], 'migrations');
+        }
 
 /*        if (empty(File::glob(database_path('migrations/*_create_checkpoints_table.php')))) {
             $timestamp = date('Y_m_d_His');
