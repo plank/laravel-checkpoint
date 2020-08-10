@@ -41,6 +41,11 @@ trait HasRevisions
         return $this->unwatched ?? [];
     }
 
+    public function getRevisionDefaults()
+    {
+        return $this->defaults ?? [];
+    }
+
     /**
      * Set the relationships to be ignored during duplication.
      * Supply an array of relation method names.
@@ -163,6 +168,7 @@ trait HasRevisions
 
                     // Replicate the current object
                     $copy = $this->replicate();
+                    $copy->fill($this->getRevisionDefaults());
                     $copy->save();
 
                     // Reattach relations to this object
