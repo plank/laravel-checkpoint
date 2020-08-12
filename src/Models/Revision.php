@@ -157,7 +157,7 @@ class Revision extends MorphPivot
             ->groupBy(['original_revisionable_id', 'revisionable_type']);
 
         $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
-        $checkpointDateColumn = $checkpoint->getCheckpointDateColumn();
+        $checkpointDateColumn = (new $checkpoint)->getCheckpointDateColumn();
 
         if ($until instanceof $checkpoint) {
             // where in this checkpoint or one of the previous ones
