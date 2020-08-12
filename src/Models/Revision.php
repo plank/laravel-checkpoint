@@ -154,7 +154,8 @@ class Revision extends MorphPivot
     public function scopeLatestIds(Builder $q, $until = null, $since = null)
     {
         $q->withoutGlobalScopes()->selectRaw("max({$this->getQualifiedKeyName()}) as closest")
-            ->groupBy(['original_revisionable_id', 'revisionable_type']);
+            ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderBy(DB::raw('NULL'));
+
 
         $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
         $checkpointDateColumn = $checkpoint::CHECKPOINT_DATE;

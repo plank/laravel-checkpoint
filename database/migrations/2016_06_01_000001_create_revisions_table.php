@@ -26,6 +26,8 @@ class CreateRevisionsTable extends Migration
                 $table->timestamps();
 
                 $table->index(['revisionable_type', 'original_revisionable_id']);
+                $table->index(['original_revisionable_id', 'revisionable_type', 'id']);
+                $table->index(['created_at']);
             }
         );
     }

@@ -68,12 +68,15 @@ class RevisionScope implements Scope
 
             // METHOD 1: Join current table on revisions, join the result on timestamps subquery
             /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                 ->joinSub($revision::timestamps($upper, $lower), 'temporal', 'temporal.closest', '=', 'revisions.created_at')
-                 ->where('revisionable_type', '=', get_class($model));*/
+                 ->joinSub(
+                    $revision::latestIds($upper, $lower), 
+                    'temporal', 'temporal.closest', '=', 
+                    (new $revision)->getQualifiedKeyName()
+                 )->where('revisionable_type', '=', get_class($model));*/
 
             // METHOD 2 : Join current table on revisions, filter out by revisionable_type, use a whereIn subquery for timestamps
             /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                ->whereIn('revisions.created_at', $revision::timestamps($upper, $lower))
+                ->whereIn((new $revision)->getQualifiedKeyName(), $revision::latestIds($upper, $lower))
                 ->where('revisionable_type', '=', get_class($model));*/
             
             // METHOD 3 : Uses a where exists wrapper, laravel handles the revisionable id/type, use a whereIn subquery for timestamps

@@ -2,7 +2,7 @@
 
 namespace Plank\Checkpoint;
 
-use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Plank\Checkpoint\Commands\StartRevisioning;
 
@@ -55,30 +55,15 @@ class CheckpointServiceProvider extends ServiceProvider
             ]);
         }
 
+        foreach (File::glob(__DIR__ . '/../database/migrations/*') as $migration) {
+            $basename = strstr($migration, 'create');
+            if (empty(File::glob(database_path('migrations/*' . $basename)))) {
+                $timestamp = date('Y_m_d_His');
+                $publish = database_path("migrations/{$timestamp}_{$basename}");
 
-        if (!class_exists(\CreateRevisionsTable::class) && !class_exists(\CreateCheckpointsTable::class)) {
-            $this->publishes([
-                __DIR__.'/../database/migrations/' => database_path('migrations'),
-            ], 'migrations');
+                $this->publishes([$migration => $publish], 'migrations');
+            }
         }
-
-/*        if (empty(File::glob(database_path('migrations/*_create_checkpoints_table.php')))) {
-            $timestamp = date('Y_m_d_His');
-            $migration = database_path("migrations/{$timestamp}_create_checkpoints_table.php");
-
-            $this->publishes([
-                __DIR__.'/../database/migrations/create_checkpoints_table.php.stub' => $migration,
-            ], 'migrations');
-        }*/
-
-/*        if (empty(File::glob(database_path('migrations/*_create_revisions_table.php')))) {
-            $timestamp = date('Y_m_d_His');
-            $migration = database_path("migrations/{$timestamp}_create_revisions_table.php");
-
-            $this->publishes([
-                __DIR__.'/../database/migrations/create_revisions_table.php.stub' => $migration,
-            ], 'migrations');
-        }*/
     }
 
     /**
