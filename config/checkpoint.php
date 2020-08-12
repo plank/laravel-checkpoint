@@ -17,7 +17,7 @@ return [
     /*
     |
     | Concrete implementation for the "version model".
-    | To extend or replace this functionality, change the value below with your full "version model" FQN.
+    | To extend or replace this functionality, change the value below with your full "version model" FQCN.
     |
     */
     'checkpoint_model' => \Plank\Checkpoint\Models\Checkpoint::class,
@@ -25,10 +25,19 @@ return [
     /*
     |
     | Concrete implementation for the "version model".
-    | To extend or replace this functionality, change the value below with your full "version model" FQN.
+    | To extend or replace this functionality, change the value below with your full "version model" FQCN.
     |
     */
     'revision_model' => \Plank\Checkpoint\Models\Revision::class,
+
+
+    /*
+     |
+     | Concrete implementation for the global "revision scopes"
+     | To extend or replace this functionality, change the value below with your full "version model" FQCN.
+     |
+     */
+    'scope_class' => \Plank\Checkpoint\Scopes\RevisionScope::class
 
 
 ];
