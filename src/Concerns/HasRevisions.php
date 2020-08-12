@@ -14,7 +14,6 @@ use Plank\Checkpoint\Observers\RevisionableObserver;
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal()
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutCheckpoint()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
  * 
  * @mixin \Illuminate\Database\Eloquent\Model

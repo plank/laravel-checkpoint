@@ -19,7 +19,6 @@ class RevisionScope implements Scope
         'at',
         'since',
         'temporal',
-        'withoutCheckpoint',
         'withoutRevisions',
     ];
 
@@ -120,18 +119,6 @@ class RevisionScope implements Scope
     protected function addWithoutRevisions(Builder $builder)
     {
         $builder->macro('withoutRevisions', function (Builder $builder) {
-            return $builder->withoutGlobalScope($this);
-        });
-    }
-
-    /**
-     * Shortcut to clearing scope from query
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @return void
-     */
-    protected function addWithoutCheckpoint(Builder $builder)
-    {
-        $builder->macro('withoutCheckpoint', function (Builder $builder) {
             return $builder->withoutGlobalScope($this);
         });
     }
