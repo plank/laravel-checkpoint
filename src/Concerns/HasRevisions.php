@@ -8,10 +8,15 @@ use ReflectionClass;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Scopes\RevisionScope;
 use Plank\Checkpoint\Helpers\RelationHelper;
+use Plank\Checkpoint\Observers\RevisionableObserver;
 
 /**
- * @package Plank\Versionable\Concerns
- *
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutCheckpoint()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
+ * 
  * @mixin \Illuminate\Database\Eloquent\Model
  */
 trait HasRevisions
@@ -80,31 +85,8 @@ trait HasRevisions
         $scopeClass = config('checkpoint.scope_class', RevisionScope::class);
         static::addGlobalScope(new $scopeClass);
 
-        // hook newVersion onto all relevant events
-        // On Create, Update, Delete, Restore : make new revisions...
-
-        static::created(function (self $model) {
-            $model->updateOrCreateRevision();
-        });
-
-        static::updating(function (self $model) {
-            // Check if any column is dirty and filter out the unwatched fields
-            if(!empty(array_diff(array_keys($model->getDirty()), $model->getRevisionUnwatched()))) {
-                $model->saveAsRevision();
-            }
-        });
-
-         static::deleting(function (self $model) {
-            if (method_exists($model, 'bootSoftDeletes')) {
-                $model->saveAsRevision();
-            }
-        });
-
-        static::deleted(function (self $model) {
-            if (!method_exists($model, 'bootSoftDeletes') || $model->forceDeleting === true) {
-                $model->revision()->delete();
-            }
-        });
+        // hook onto all relevant events: On Create, Update, Delete, Restore : make new revisions...
+        static::observe(RevisionableObserver::class);
     }
 
     /**
