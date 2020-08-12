@@ -3,11 +3,8 @@
 namespace Plank\Checkpoint\Helpers;
 
 use Neurony\Duplicate\Helpers\RelationHelper as BaseRelationHelper;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\Model;
 use ReflectionException;
-use ReflectionMethod;
-use SplFileObject;
 
 class RelationHelper extends BaseRelationHelper
 {
@@ -24,39 +21,6 @@ class RelationHelper extends BaseRelationHelper
     {
         static::$relations = [];
 
-        foreach (get_class_methods($model) as $method) {
-            if (! method_exists(Model::class, $method)) {
-                $reflection = new ReflectionMethod($model, $method);
-                $file = new SplFileObject($reflection->getFileName());
-                $code = '';
-
-                $file->seek($reflection->getStartLine() - 1);
-
-                while ($file->key() < $reflection->getEndLine()) {
-                    $code .= $file->current();
-                    $file->next();
-                }
-
-                $code = trim(preg_replace('/\s\s+/', '', $code));
-                $begin = strpos($code, 'function(');
-                $code = substr($code, $begin, strrpos($code, '}') - $begin + 1);
-
-                foreach (static::$relationTypes as $type) {
-                    if (stripos($code, '$this->'.$type.'(')) {
-                        $relation = $model->$method();
-
-                        if ($relation instanceof Relation) {
-                            static::$relations[$method] = [
-                                'type' => get_class($relation),
-                                'model' => $relation->getRelated(),
-                                'original' => $relation->getParent(),
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-
-        return static::$relations;
+        return parent::getModelRelations($model);
     }
 }
