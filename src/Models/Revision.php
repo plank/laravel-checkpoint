@@ -157,20 +157,23 @@ class Revision extends MorphPivot
             ->groupBy(['original_revisionable_id', 'revisionable_type']);
 
         $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
+        $checkpointDateColumn = $checkpoint->getCheckpointDateColumn();
 
-        if ($until instanceof Checkpoint) {
+        if ($until instanceof $checkpoint) {
             // where in this checkpoint or one of the previous ones
-            $q->whereIn('checkpoint_id', $checkpoint::select('id')
-                ->where('checkpoint_date', '<=' , $until->checkpoint_date)
+            $q->whereIn(
+                'checkpoint_id',
+                $checkpoint::select('id')->where($checkpointDateColumn, '<=', $until->$checkpointDateColumn)
             );
         } elseif ($until !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '<=', Carbon::parse($until));
         }
 
-        if ($since instanceof Checkpoint) {
+        if ($since instanceof $checkpoint) {
             // where in this checkpoint or one of the following ones
-            $q->whereIn('checkpoint_id', $checkpoint::select('id')
-                ->where('checkpoint_date', '>' , $since->checkpoint_date)
+            $q->whereIn(
+                'checkpoint_id',
+                $checkpoint::select('id')->where($checkpointDateColumn, '>', $since->$checkpointDateColumn)
             );
         } elseif ($since !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '>', Carbon::parse($since));

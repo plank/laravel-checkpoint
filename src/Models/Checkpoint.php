@@ -46,6 +46,13 @@ class Checkpoint extends Model
     const UPDATED_AT = 'updated_at';
 
     /**
+     * The name of the "checkpoint date" column
+     *
+     * @var string
+     */
+    const CHECKPOINT_DATE = 'checkpoint_date';
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array
@@ -87,5 +94,10 @@ class Checkpoint extends Model
     public function models(): Collection
     {
         return $this->revisions()->with('revisionable')->get()->pluck('revisionable');
+    }
+
+    public function getCheckpointDateColumn()
+    {
+        return static::CHECKPOINT_DATE;
     }
 }
