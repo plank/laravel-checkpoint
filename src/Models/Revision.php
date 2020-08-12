@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class Revision extends MorphPivot
 {
@@ -54,6 +55,13 @@ class Revision extends MorphPivot
     const UPDATED_AT = 'updated_at';
 
     /**
+     * The name of the "checkpoint id" column.
+     *
+     * @var string
+     */
+    const CHECKPOINT_ID = 'checkpoint_id';
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array
@@ -62,6 +70,16 @@ class Revision extends MorphPivot
         'id',
         'metadata'
     ];
+
+    /**
+     * Get the name of the "checkpoint id" column.
+     *
+     * @return string
+     */
+    public function getCheckpointIdColumn()
+    {
+        return static::CHECKPOINT_ID;
+    }
 
     /**
      * Retrieve the revisioned model associated with this entry
@@ -81,7 +99,7 @@ class Revision extends MorphPivot
     public function checkpoint(): BelongsTo
     {
         $model = config('checkpoint.checkpoint_model', Checkpoint::class);
-        return $this->belongsTo($model, 'checkpoint_id', (new $model)->getKeyName());
+        return $this->belongsTo($model, $this->getCheckpointIdColumn());
     }
 
     /**
@@ -119,9 +137,18 @@ class Revision extends MorphPivot
      *
      * @return bool
      */
-    public function isLatestRevision(): bool
+    public function isLatest(): bool
     {
-        return $this->next()->get()->isEmpty();
+        return $this->next()->doesntExist();
+    }
+
+    /**
+     * Returns true if this is the first revision for an item
+     * 
+     * @return bool
+     */
+    public function isNew() {
+        return $this->previous_id === null;
     }
 
     /**
@@ -163,7 +190,7 @@ class Revision extends MorphPivot
         if ($until instanceof $checkpoint) {
             // where in this checkpoint or one of the previous ones
             $q->whereIn(
-                'checkpoint_id',
+                $this->getCheckpointIdColumn(),
                 $checkpoint::select('id')->where($checkpointDateColumn, '<=', $until->$checkpointDateColumn)
             );
         } elseif ($until !== null) {
@@ -173,7 +200,7 @@ class Revision extends MorphPivot
         if ($since instanceof $checkpoint) {
             // where in this checkpoint or one of the following ones
             $q->whereIn(
-                'checkpoint_id',
+                $this->getCheckpointIdColumn(),
                 $checkpoint::select('id')->where($checkpointDateColumn, '>', $since->$checkpointDateColumn)
             );
         } elseif ($since !== null) {

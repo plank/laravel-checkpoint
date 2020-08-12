@@ -60,6 +60,16 @@ class Checkpoint extends Model
     protected $guarded = ['id'];
 
     /**
+     * Get the name of the "checkpoint date" column.
+     *
+     * @return string
+     */
+    public function getCheckpointDateColumn()
+    {
+        return static::CHECKPOINT_DATE;
+    }
+
+    /**
      * Retrieve all revision intermediaries associated with this checkpoint
      *
      * @return HasMany
@@ -94,10 +104,5 @@ class Checkpoint extends Model
     public function models(): Collection
     {
         return $this->revisions()->with('revisionable')->get()->pluck('revisionable');
-    }
-
-    public function getCheckpointDateColumn()
-    {
-        return static::CHECKPOINT_DATE;
     }
 }

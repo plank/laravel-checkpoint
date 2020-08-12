@@ -30,7 +30,7 @@ trait HasCheckpointRelations
             'revisionable_id',
             'id',
             'id',
-            'checkpoint_id'
+            $checkpoint::CHECKPOINT_ID
         )->where('revisionable_type', self::class);
     }
 
