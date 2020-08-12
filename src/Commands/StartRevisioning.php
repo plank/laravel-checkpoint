@@ -55,7 +55,8 @@ class StartRevisioning extends Command
                foreach ($results as $item) {
                    $item->updateOrCreateRevision();
                    $revision = $item->revision;
-                   $revision->created_at = $revision->created_at->addSeconds($timeDelta);
+                   $createdAt = $item->applyCreatedAt();
+                   $revision->created_at = $createdAt ? $createdAt->addSeconds($timeDelta) : $createdAt;
                    $revision->checkpoint()->associate($checkpoint);
                    $revision->save();
                    $timeDelta--;
