@@ -2,7 +2,6 @@
 
 namespace Plank\Checkpoint\Concerns;
 
-use Carbon\Carbon;
 use Closure;
 use Exception;
 use ReflectionClass;
@@ -32,6 +31,17 @@ trait HasRevisions
     }
 
     /**
+     * Override to change what is stored in a
+     * new revision's created at timestamp
+     *
+     * @return string
+     */
+    protected function freshRevisionCreatedAt(): string
+    {
+        return $this->freshTimestampString();
+    }
+
+    /**
      * Set a protected unwatched array on your model
      * to skip revisioning on specific columns.
      *
@@ -45,11 +55,6 @@ trait HasRevisions
     public function getRevisionDefaults()
     {
         return $this->defaults ?? [];
-    }
-
-    public function applyCreatedAt()
-    {
-        return Carbon::now();
     }
 
     /**
@@ -72,9 +77,8 @@ trait HasRevisions
      */
     public static function bootHasRevisions(): void
     {
-        $scopeClass = config('checkpoint.scope_class');
-        static::addGlobalScope(new $scopeClass());
-
+        $scopeClass = config('checkpoint.scope_class', RevisionScope::class);
+        static::addGlobalScope(new $scopeClass);
 
         // hook newVersion onto all relevant events
         // On Create, Update, Delete, Restore : make new revisions...
@@ -216,7 +220,7 @@ trait HasRevisions
                     $copy->updateOrCreateRevision([
                         'original_revisionable_id' => $this->revision->original_revisionable_id,
                         'previous_revision_id' => $this->revision->id,
-                        'created_at' => $copy->applyCreatedAt(),
+                        'created_at' => $copy->freshRevisionCreatedAt(),
                     ]);
 
                     // Point $this to the duplicate, unload its relations and refresh the object
@@ -261,5 +265,25 @@ trait HasRevisions
     public function deleteAllRevisions(): void
     {
 
+    }
+
+    /**
+     * Is this model the first revision
+     * 
+     * @return bool
+     */
+    public function getNewAttribute(): bool
+    {
+        return $this->revision->isNew();
+    }
+
+    /**
+     * Is this model the latest revision
+     * 
+     * @return bool
+     */
+    public function getLatestAttribute(): bool
+    {
+        return $this->revision->isLatest();
     }
 }
