@@ -50,17 +50,14 @@ class StartRevisioning extends Command
         }
 
         if ($class = $this->argument('class')) {
-            $timeDelta = 1;
             $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
                foreach ($results as $item) {
                    $item->updateOrCreateRevision();
                    $revision = $item->revision;
                    // TODO: shouldn't be required for global query anymore.
-                   //$createdAt = $item->freshRevisionCreatedAt();
-                   //$revision->created_at = $createdAt ? $createdAt->addSeconds($timeDelta) : $createdAt;
+                   $revision->created_at = $item->freshRevisionCreatedAt();
                    $revision->checkpoint()->associate($checkpoint);
                    $revision->save();
-                   $timeDelta--;
                }
             });
         } else {
