@@ -183,8 +183,9 @@ trait HasRevisions
                                 foreach ($this->$relation()->get() as $child) {
                                     if (method_exists($child, 'bootHasRevisions')) {
                                         // Revision the child model by attaching it to our new copy
-                                        $foreignKey = $this->$relation()->getForeignKeyName();
-                                        $child->$foreignKey = $copy->getKey();
+                                        $child->setRawAttributes(array_merge($child->getOriginal(), [
+                                            $this->$relation()->getForeignKeyName() => $copy->getKey()
+                                        ]));
                                         $child->save();
                                     } else {
                                         $copy->$relation()->save($child->replicate());
@@ -203,7 +204,7 @@ trait HasRevisions
                     // Save the duplicate and its relations
 
                     // Reset the current model instance to original data
-                    $this->fill($this->getOriginal());
+                    $this->setRawAttributes($this->getOriginal());
 
                     //  Handle unique columns by storing them as meta on the revision itself
                     $this->moveMetaToRevision();
