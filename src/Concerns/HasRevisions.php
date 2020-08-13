@@ -69,13 +69,14 @@ trait HasRevisions
      */
     public function getExcludedRelations(): array
     {
+        // todo: this runs on every save, is there a way to run once per instance??
         $reflection = new ReflectionClass(HasCheckpointRelations::class);
         $default = collect($reflection->getMethods())->pluck('name')->toArray();
         return array_merge($default, $this->excludedRelations ?? []);
     }
 
     /**
-     * Boot the trait.
+     * Boot has revisions trait for a model.
      *
      * @return void
      */
@@ -86,6 +87,16 @@ trait HasRevisions
 
         // hook onto all relevant events: On Create, Update, Delete, Restore : make new revisions...
         static::observe(RevisionableObserver::class);
+    }
+    
+    /**
+     * Initialize the has revisions trait for an instance.
+     *
+     * @return void
+     */
+    public function initializeHasRevisions()
+    {
+        //
     }
 
     /**
