@@ -92,6 +92,20 @@ class Revision extends MorphPivot
     }
 
     /**
+     * Retrieve the original model in this sequence
+     *
+     * @return MorphTo
+     */
+    public function initialRevisionable(): MorphTo
+    {
+        return $this->morphTo(
+            'revisionable',
+            'revisionable_type',
+            'original_revisionable_id'
+        )->withoutGlobalScopes();
+    }
+
+    /**
      * Return the associated checkpoint/release to this revision
      *
      * @return BelongsTo
@@ -100,16 +114,6 @@ class Revision extends MorphPivot
     {
         $model = config('checkpoint.checkpoint_model', Checkpoint::class);
         return $this->belongsTo($model, $this->getCheckpointIdColumn());
-    }
-
-    /**
-     * Retrieve the original model in this sequence
-     *
-     * @return MorphTo
-     */
-    public function initialRevision(): MorphTo
-    {
-        return $this->morphTo('revisionable', 'revisionable_type', 'original_revisionable_id');
     }
 
     /**
@@ -148,7 +152,7 @@ class Revision extends MorphPivot
      * @return bool
      */
     public function isNew() {
-        return $this->previous_id === null;
+        return $this->previous_revision_id === null;
     }
 
     /**

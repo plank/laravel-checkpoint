@@ -30,7 +30,7 @@ trait HasCheckpointRelations
             'revisionable_id',
             'id',
             'id',
-            $checkpoint::CHECKPOINT_ID
+            $revision::CHECKPOINT_ID
         )->where('revisionable_type', self::class);
     }
 
@@ -83,9 +83,9 @@ trait HasCheckpointRelations
      *
      * @return MorphTo
      */
-    public function initialRevision(): MorphTo
+    public function initial(): MorphTo
     {
-        return $this->revision->initial->revisionable();
+        return $this->revision->initialRevisionable();
     }
 
 }
