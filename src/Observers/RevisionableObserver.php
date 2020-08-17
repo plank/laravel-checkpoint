@@ -48,7 +48,9 @@ class RevisionableObserver
      */
     public function created($model)
     {
-        $model->updateOrCreateRevision();
+        if ($model->shouldRevision()) {
+            $model->updateOrCreateRevision();
+        }
     }
 
     /**

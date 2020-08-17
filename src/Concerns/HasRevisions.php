@@ -126,27 +126,23 @@ trait HasRevisions
      *
      * @param  array  $values
      *
-     * @return bool|\Illuminate\Database\Eloquent\Model
+     * @return \Illuminate\Database\Eloquent\Model
      */
     public function updateOrCreateRevision($values = [])
     {
-        if ($this->shouldRevision()) {
-            if ($this->revision()->exists()) {
-                $search = $this->revision->toArray();
-            } else {
-                $search = [
-                    'revisionable_id' => $this->id,
-                    'revisionable_type' => self::class,
-                    'original_revisionable_id' => $this->id,
-                ];
-            }
-            // when values is empty, we want to write in the data as used for lookup
-            $values = empty($values) ? $search : $values;
-
-            return $this->revision()->updateOrCreate($search, $values);
+        if ($this->revision()->exists()) {
+            $search = $this->revision->toArray();
+        } else {
+            $search = [
+                'revisionable_id' => $this->id,
+                'revisionable_type' => self::class,
+                'original_revisionable_id' => $this->id,
+            ];
         }
+        // when values is empty, we want to write in the data as used for lookup
+        $values = empty($values) ? $search : $values;
 
-        return false;
+        return $this->revision()->updateOrCreate($search, $values);
     }
 
     /**
