@@ -52,7 +52,7 @@ class StartRevisioning extends Command
         if ($class = $this->argument('class')) {
             $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
                foreach ($results as $item) {
-                   $item->updateOrCreateRevision();
+                   $item->updateOrCreateRevision([], false);
                    $revision = $item->revision;
                    // TODO: shouldn't be required for global query anymore.
                    $revision->created_at = $item->freshRevisionCreatedAt();
