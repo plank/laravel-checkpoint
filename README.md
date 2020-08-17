@@ -1,18 +1,19 @@
-# Laravel Versionable - Git for models. 
+# Laravel Checkpoint 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/versionable.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
 [![Build Status](https://img.shields.io/travis/plank/versionable/master.svg?style=flat-square)](https://travis-ci.org/plank/versionable)
 [![Quality Score](https://img.shields.io/scrutinizer/g/plank/versionable.svg?style=flat-square)](https://scrutinizer-ci.com/g/plank/versionable)
 [![Total Downloads](https://img.shields.io/packagist/dt/plank/versionable.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
 
-This is where your description should go. Try and limit it to a paragraph or two, and maybe throw in a mention of what PSRs you support to avoid any confusion with users and contributors.
+Checkpoint offers a way to create a browseable revision history of any model you desire. This makes it possible to view
+the state of a specific model instance at a specific period in time
 
 ## Installation
 
 You can install the package via composer:
 
 ```bash
-composer require plank/versionable
+composer require plank/laravel-checkpoint
 ```
 
 ## Usage
