@@ -125,13 +125,12 @@ trait HasRevisions
      * Update or Create the revision for this model.
      *
      * @param  array  $values
-     * @param  bool   $check
      *
      * @return bool|\Illuminate\Database\Eloquent\Model
      */
-    public function updateOrCreateRevision($values = [], $check = true)
+    public function updateOrCreateRevision($values = [])
     {
-        if (!$check || $this->shouldRevision()) {
+        if ($this->shouldRevision()) {
             if ($this->revision()->exists()) {
                 $search = $this->revision->toArray();
             } else {
@@ -168,7 +167,7 @@ trait HasRevisions
 
                     // Ensure that the original model has a revision
                     if ($this->revision()->doesntExist()) {
-                        $this->updateOrCreateRevision([], false);
+                        $this->updateOrCreateRevision();
                     }
 
                     // Replicate the current object
@@ -215,7 +214,7 @@ trait HasRevisions
                         'original_revisionable_id' => $this->revision->original_revisionable_id,
                         'previous_revision_id' => $this->revision->id,
                         'created_at' => $copy->freshRevisionCreatedAt(),
-                    ], false);
+                    ]);
 
                     // Point $this to the duplicate, unload its relations and refresh the object
                     $this->setRawAttributes($copy->getAttributes());
