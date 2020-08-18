@@ -31,13 +31,4 @@ return [
     'revision_model' => \Plank\Checkpoint\Models\Revision::class,
 
 
-    /*
-     |
-     | Concrete implementation for the global "revision scopes"
-     | To extend or replace this functionality, change the value below with your full "version model" FQCN.
-     |
-     */
-    'scope_class' => \Plank\Checkpoint\Scopes\RevisionScope::class
-
-
 ];

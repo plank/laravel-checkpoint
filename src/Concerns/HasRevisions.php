@@ -82,9 +82,7 @@ trait HasRevisions
      */
     public static function bootHasRevisions(): void
     {
-        $scopeClass = config('checkpoint.scope_class', RevisionScope::class);
-        static::addGlobalScope(new $scopeClass);
-
+        static::addGlobalScope(new RevisionScope);
         // hook onto all relevant events: On Create, Update, Delete, Restore : make new revisions...
         static::observe(RevisionableObserver::class);
     }
