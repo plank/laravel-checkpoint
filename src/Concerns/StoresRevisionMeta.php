@@ -33,7 +33,7 @@ trait StoresRevisionMeta
     {
         return json_decode($this->revision->metadata, true);
     }
-    
+
     /**
      * Set a protected revision_meta array on your model
      * to store/access unique columns as metadata on its revision
@@ -78,7 +78,7 @@ trait StoresRevisionMeta
     public function getAttributeValue($key)
     {
         $value = parent::getAttributeValue($key);
-        if (is_null($value) && in_array($key, $this->getRevisionMeta())) {
+        if (is_null($value) && in_array($key, $this->getRevisionMeta()) && $this->revision()->exists()) {
             return $this->metadata[$key];
         }
 
