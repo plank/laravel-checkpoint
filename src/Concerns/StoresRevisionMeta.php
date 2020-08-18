@@ -31,7 +31,10 @@ trait StoresRevisionMeta
      */
     public function getMetadataAttribute()
     {
-        return json_decode($this->revision->metadata, true);
+        if ($this->revision !== null) {
+            return json_decode($this->revision->metadata, true);
+        }
+        return [];
     }
 
     /**
