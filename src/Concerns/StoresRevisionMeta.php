@@ -62,9 +62,8 @@ trait StoresRevisionMeta
                 $this->$attribute = null;
             }
             $revision = $revision ?? $this->revision;
-            $revision->latest = false;
             $revision->metadata = $meta->toJson();
-            $this->withoutEvents(function () use ($revision){
+            $this->withoutEvents(function () use ($revision) {
                 $revision->save();
                 $this->save(); // modified attributes, make sure this is saved without events
             });
@@ -82,7 +81,7 @@ trait StoresRevisionMeta
     {
         $value = parent::getAttributeValue($key);
         if (is_null($value) && in_array($key, $this->getRevisionMeta()) && $this->revision()->exists()) {
-            return $this->metadata[$key];
+            return $this->metadata[$key] ?? null;
         }
 
         return $value;

@@ -56,11 +56,6 @@ trait HasRevisions
         return $this->unwatched ?? [];
     }
 
-    public function getRevisionDefaults()
-    {
-        return $this->defaults ?? [];
-    }
-
     /**
      * Set the relationships to be ignored during duplication.
      * Supply an array of relation method names.
@@ -129,7 +124,7 @@ trait HasRevisions
     public function updateOrCreateRevision($values = [])
     {
         if ($this->revision()->exists()) {
-            $search = $this->revision->toArray();
+            $search = ['id' => $this->revision->id];
         } else {
             $search = [
                 'revisionable_id' => $this->id,
@@ -165,8 +160,7 @@ trait HasRevisions
                     }
 
                     // Replicate the current object
-                    $copy = $this->replicate();
-                    $copy->fill($this->getRevisionDefaults());
+                    $copy = $this->replicate($this->getRevisionUnwatched());
                     $copy->save();
 
                     // Reattach relations to this object
@@ -195,13 +189,16 @@ trait HasRevisions
                         }
                     }
 
-                    // Save the duplicate and its relations
-
                     // Reset the current model instance to original data
                     $this->setRawAttributes($this->getOriginal());
 
                     //  Handle unique columns by storing them as meta on the revision itself
                     $this->moveMetaToRevision();
+                    
+                    // Update the revision of the original item
+                    $this->updateOrCreateRevision([
+                        'latest' => false,
+                    ]);
 
                     // Update the revision of the duplicate with the correct data.
                     $copy->updateOrCreateRevision([
