@@ -1,9 +1,9 @@
 # Laravel Checkpoint 
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/versionable.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
-[![Build Status](https://img.shields.io/travis/plank/versionable/master.svg?style=flat-square)](https://travis-ci.org/plank/versionable)
-[![Quality Score](https://img.shields.io/scrutinizer/g/plank/versionable.svg?style=flat-square)](https://scrutinizer-ci.com/g/plank/versionable)
-[![Total Downloads](https://img.shields.io/packagist/dt/plank/versionable.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/laravel-checkpoint)
+[![Build Status](https://img.shields.io/travis/plank/laravel-checkpoint/master.svg?style=flat-square)](https://travis-ci.org/plank/laravel-checkpoint)
+[![Quality Score](https://img.shields.io/scrutinizer/g/plank/laravel-checkpoint.svg?style=flat-square)](https://scrutinizer-ci.com/g/plank/laravel-checkpoint)
+[![Total Downloads](https://img.shields.io/packagist/dt/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/laravel-checkpoint)
 
 Checkpoint offers a way to create a browseable revision history of any model you desire. This makes it possible to view
 the state of a specific model instance at a specific period in time
