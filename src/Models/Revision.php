@@ -155,9 +155,23 @@ class Revision extends MorphPivot
         return $this->previous_revision_id === null;
     }
 
+    /**
+     * Returns true if item is new for the given bulletin
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isNewAt(Checkpoint $moment): bool
+    {
+        if ($this->checkpoint()->exists()) {
+            return $this->isNew() && $moment->is($this->checkpoint);
+        }
+
+        return $this->isNew();
+    }
 
     /**
-     * Returns true if this is the most current revision for an item
+     * Returns true if this is revision is updated at the given bulletin
      *
      * @param  Checkpoint  $moment
      * @return bool
