@@ -282,4 +282,15 @@ trait HasRevisions
     {
         return $this->revision->isUpdatedAt($moment);
     }
+
+    /**
+     * Is this model new on the given checkpoint moment
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isNewAt(Checkpoint $moment): bool
+    {
+        return $this->revision->isNewAt($moment);
+    }
 }
