@@ -6,6 +6,7 @@ use Closure;
 use Exception;
 use ReflectionClass;
 use Plank\Checkpoint\Models\Revision;
+use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Scopes\RevisionScope;
 use Plank\Checkpoint\Helpers\RelationHelper;
 use Plank\Checkpoint\Observers\RevisionableObserver;
@@ -269,5 +270,16 @@ trait HasRevisions
     public function getLatestAttribute(): bool
     {
         return $this->revision->isLatest();
+    }
+
+    /**
+     * Is this model updated on the given checkpoint moment
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isUpdatedAt(Checkpoint $moment): bool
+    {
+        return $this->revision->isUpdatedAt($moment);
     }
 }

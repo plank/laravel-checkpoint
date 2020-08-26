@@ -1,6 +1,7 @@
 <?php
 namespace Plank\Checkpoint\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -70,6 +71,66 @@ class Checkpoint extends Model
     }
 
     /**
+     * Get the "checkpoint date" field.
+     *
+     * @return string
+     */
+    public function getCheckpointDate()
+    {
+        return $this->{$this->getCheckpointDateColumn()};
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints older than the one provided ordered by checkpoint date desc
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Checkpoint  $checkpoint
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeOlderThan(Builder $query, Checkpoint $checkpoint)
+    {
+        $column = $checkpoint->getCheckpointDateColumn();
+        return $query->where($column, '<', $checkpoint->getCheckpointDate())->latest($column);
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints newer than the one provided ordered by checkpoint date asc
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  Checkpoint  $checkpoint
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNewerThan(Builder $query, Checkpoint $checkpoint)
+    {
+        $column = $checkpoint->getCheckpointDateColumn();
+        return $query->where($column, '>', $checkpoint->getCheckpointDate())->oldest($column);
+    }
+
+    /**
+     * Return the checkpoint right before this one
+     * note: calculated via checkpoint date, ids are sequential
+     *       but then you would locked in to auto increments
+     *
+     * @return Checkpoint|Model|object|null
+     */
+    public function previous()
+    {
+        return self::olderThan($this)->first();
+    }
+
+    /**
+     * Return the checkpoint right after this one
+     *
+     * @return Checkpoint|Model|object|null
+     */
+    public function next()
+    {
+        return self::newerThan($this)->first();
+    }
+
+    /**
      * Retrieve all revision intermediaries associated with this checkpoint
      *
      * @return HasMany
@@ -77,7 +138,7 @@ class Checkpoint extends Model
     public function revisions(): HasMany
     {
         $model = config('checkpoint.revision_model', Revision::class);
-        return $this->hasMany($model, 'checkpoint_id');
+        return $this->hasMany($model, $model::CHECKPOINT_ID);
     }
 
     /**
