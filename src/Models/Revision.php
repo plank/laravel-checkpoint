@@ -148,7 +148,7 @@ class Revision extends MorphPivot
 
     /**
      * Returns true if this is the first revision for an item
-     * 
+     *
      * @return bool
      */
     public function isNew() {
@@ -178,13 +178,7 @@ class Revision extends MorphPivot
      */
     public function isUpdatedAt(Checkpoint $moment): bool
     {
-        $previous = $moment->previous();
-
-        if ($previous !== null && !$this->isNew() && $this->previous->checkpoint()->exists()) {
-            return $previous->is($this->previous->checkpoint);
-        }
-
-        return false;
+        return ($this->bulletin_id === $moment->id || $this->bulletin_id == null) && !$this->isNewAt($moment);
     }
 
     /**
