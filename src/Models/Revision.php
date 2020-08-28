@@ -123,7 +123,7 @@ class Revision extends MorphPivot
      */
     public function previous(): BelongsTo
     {
-        return $this->belongsTo(self::class, 'previous_revision_id', $this->primaryKey);
+        return $this->belongsTo(get_class($this), 'previous_revision_id', $this->primaryKey);
     }
 
     /**
@@ -133,7 +133,7 @@ class Revision extends MorphPivot
      */
     public function next(): HasOne
     {
-        return $this->hasOne(self::class, 'previous_revision_id', $this->primaryKey);
+        return $this->hasOne(get_class($this), 'previous_revision_id', $this->primaryKey);
     }
 
     /**
@@ -156,13 +156,45 @@ class Revision extends MorphPivot
     }
 
     /**
+     * Returns true if item is new for the given bulletin
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isNewAt(Checkpoint $moment): bool
+    {
+        if ($this->checkpoint()->exists()) {
+            return $this->isNew() && $moment->is($this->checkpoint);
+        }
+
+        return $this->isNew();
+    }
+
+    /**
+     * Returns true if this is revision is updated at the given bulletin
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isUpdatedAt(Checkpoint $moment): bool
+    {
+        $previous = $moment->previous();
+
+        if ($previous !== null && !$this->isNew() && $this->previous->checkpoint()->exists()) {
+            return $previous->is($this->previous->checkpoint);
+        }
+
+        return false;
+    }
+
+    /**
      * Return all the revisions that share the same item
      *
      * @return
      */
     public function allRevisions(): HasMany
     {
-        return $this->hasMany(self::class, 'revisionable_type', 'revisionable_type')
+        return $this->hasMany(get_class($this), 'revisionable_type', 'revisionable_type')
             ->where('original_revisionable_id', $this->original_revisionable_id);
     }
 
