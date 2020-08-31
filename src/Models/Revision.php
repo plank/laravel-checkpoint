@@ -178,13 +178,13 @@ class Revision extends MorphPivot
      */
     public function isUpdatedAt(Checkpoint $moment): bool
     {
-        return ($this->bulletin_id === $moment->id || $this->bulletin_id == null) && !$this->isNewAt($moment);
+        return !$this->isNew() && ($this->checkpoint()->doesntExist() || $moment->is($this->checkpoint));
     }
 
     /**
      * Return all the revisions that share the same item
      *
-     * @return
+     * @return HasMany
      */
     public function allRevisions(): HasMany
     {
