@@ -16,7 +16,7 @@ use Plank\Checkpoint\Observers\RevisionableObserver;
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
- * 
+ *
  * @mixin \Illuminate\Database\Eloquent\Model
  */
 trait HasRevisions
@@ -82,7 +82,7 @@ trait HasRevisions
         // hook onto all relevant events: On Create, Update, Delete, Restore : make new revisions...
         static::observe(RevisionableObserver::class);
     }
-    
+
     /**
      * Initialize the has revisions trait for an instance.
      *
@@ -161,7 +161,7 @@ trait HasRevisions
                     }
 
                     // Replicate the current object
-                    $copy = $this->replicate($this->getRevisionUnwatched());
+                    $copy = $this->replicate($this->getExcludedColumns());
                     $copy->save();
 
                     // Reattach relations to this object
@@ -175,6 +175,7 @@ trait HasRevisions
                                         $child->setRawAttributes(array_merge($child->getOriginal(), [
                                             $this->$relation()->getForeignKeyName() => $copy->getKey()
                                         ]));
+                                        $child->setRevisionUnwatched();
                                         $child->save();
                                     } else {
                                         $copy->$relation()->save($child->replicate());
@@ -195,7 +196,7 @@ trait HasRevisions
 
                     //  Handle unique columns by storing them as meta on the revision itself
                     $this->moveMetaToRevision();
-                    
+
                     // Update the revision of the original item
                     $this->updateOrCreateRevision([
                         'latest' => false,
@@ -254,7 +255,7 @@ trait HasRevisions
 
     /**
      * Is this model the first revision
-     * 
+     *
      * @return bool
      */
     public function getNewAttribute(): bool
@@ -264,7 +265,7 @@ trait HasRevisions
 
     /**
      * Is this model the latest revision
-     * 
+     *
      * @return bool
      */
     public function getLatestAttribute(): bool
@@ -292,5 +293,27 @@ trait HasRevisions
     public function isNewAt(Checkpoint $moment): bool
     {
         return $this->revision->isNewAt($moment);
+    }
+
+    /**
+     * Return the columns to ignore when creating a copy of a model.
+     * Gets passed to replicate() in saveAsRevision().
+     *
+     * @return array
+     */
+    public function getExcludedColumns(): array
+    {
+        return $this->getRevisionUnwatched();
+    }
+
+    /**
+     * Modify the contents of the unwatched property.
+     * Useful for adjusting what columns should be default when creating a new revision on a child relationship.
+     *
+     * @param  null  $unwatched
+     */
+    public function setRevisionUnwatched($unwatched = null): void
+    {
+        $this->unwatched = $unwatched ?? $this->getRevisionUnwatched();
     }
 }
