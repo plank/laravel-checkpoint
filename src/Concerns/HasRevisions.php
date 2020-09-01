@@ -161,8 +161,9 @@ trait HasRevisions
                     }
 
                     // Replicate the current object
-                    $copy = $this->replicate($this->getExcludedColumns());
+                    $copy = $this->withoutRelations()->replicate($this->getExcludedColumns());
                     $copy->save();
+                    $copy->refresh();
 
                     // Reattach relations to this object
                     $excludedRelations = $this->getExcludedRelations();
@@ -211,7 +212,7 @@ trait HasRevisions
 
                     // Point $this to the duplicate, unload its relations and refresh the object
                     $this->setRawAttributes($copy->getAttributes());
-                    $this->relations = [];
+                    $this->unsetRelations();
                     $this->refresh();
                 });
 
