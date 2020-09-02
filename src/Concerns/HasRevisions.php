@@ -36,42 +36,6 @@ trait HasRevisions
     }
 
     /**
-     * Override to change what is stored in a
-     * new revision's created at timestamp
-     *
-     * @return string
-     */
-    protected function freshRevisionCreatedAt(): string
-    {
-        return $this->freshTimestampString();
-    }
-
-    /**
-     * Set a protected unwatched array on your model
-     * to skip revisioning on specific columns.
-     *
-     * @return array
-     */
-    public function getRevisionUnwatched(): array
-    {
-        return $this->unwatched ?? [];
-    }
-
-    /**
-     * Set the relationships to be ignored during duplication.
-     * Supply an array of relation method names.
-     *
-     * @return array
-     */
-    public function getExcludedRelations(): array
-    {
-        // todo: this runs on every save, is there a way to run once per instance??
-        $reflection = new ReflectionClass(HasCheckpointRelations::class);
-        $default = collect($reflection->getMethods())->pluck('name')->toArray();
-        return array_merge($default, $this->excludedRelations ?? []);
-    }
-
-    /**
      * Boot has revisions trait for a model.
      *
      * @return void
@@ -113,6 +77,106 @@ trait HasRevisions
     public static function revisioned($callback): void
     {
         static::registerModelEvent('revisioned', $callback);
+    }
+
+    /**
+     * Is this model the first revision
+     *
+     * @return bool
+     */
+    public function getNewAttribute(): bool
+    {
+        return $this->revision->isNew();
+    }
+
+    /**
+     * Is this model the latest revision
+     *
+     * @return bool
+     */
+    public function getLatestAttribute(): bool
+    {
+        return $this->revision->isLatest();
+    }
+
+
+    /**
+     * Is this model updated on the given checkpoint moment
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isUpdatedAt(Checkpoint $moment): bool
+    {
+        return $this->revision->isUpdatedAt($moment);
+    }
+
+    /**
+     * Is this model new on the given checkpoint moment
+     *
+     * @param  Checkpoint  $moment
+     * @return bool
+     */
+    public function isNewAt(Checkpoint $moment): bool
+    {
+        return $this->revision->isNewAt($moment);
+    }
+
+    /**
+     * Override to change what is stored in a new revision's created at timestamp
+     *
+     * @return string
+     */
+    protected function freshRevisionCreatedAt(): string
+    {
+        return $this->freshTimestampString();
+    }
+
+    /**
+     * Return the columns to ignore when creating a copy of a model.
+     * Gets passed to replicate() in saveAsRevision().
+     *
+     * @return array
+     */
+    public function getExcludedColumns(): array
+    {
+        return $this->getRevisionUnwatched();
+    }
+
+    /**
+     * Set a protected unwatched array on your model
+     * to skip revisioning on specific columns.
+     *
+     * @return array
+     */
+    public function getRevisionUnwatched(): array
+    {
+        return $this->unwatched ?? [];
+    }
+
+    /**
+     * Modify the contents of the unwatched property.
+     * Useful for adjusting what columns should be default when creating a new revision on a child relationship.
+     *
+     * @param  null  $unwatched
+     */
+    public function setRevisionUnwatched($unwatched = null): void
+    {
+        $this->unwatched = $unwatched ?? $this->getRevisionUnwatched();
+    }
+
+    /**
+     * Set the relationships to be ignored during duplication.
+     * Supply an array of relation method names.
+     *
+     * @return array
+     */
+    public function getExcludedRelations(): array
+    {
+        // todo: this runs on every save, is there a way to run once per instance??
+        $reflection = new ReflectionClass(HasCheckpointRelations::class);
+        $default = collect($reflection->getMethods())->pluck('name')->toArray();
+        return array_merge($default, $this->excludedRelations ?? []);
     }
 
     /**
@@ -170,6 +234,7 @@ trait HasRevisions
                     foreach (RelationHelper::getModelRelations($this) as $relation => $attributes) {
                         if (!in_array($relation, $excludedRelations, true)) {
                             if (RelationHelper::isChild($attributes['type'])) {
+                                logger(self::class . " {$this->getKey()}: duplicating children via $relation ({$attributes['type']})");
                                 foreach ($this->$relation()->get() as $child) {
                                     if (method_exists($child, 'bootHasRevisions')) {
                                         // Revision the child model by attaching it to our new copy
@@ -183,11 +248,10 @@ trait HasRevisions
                                     }
                                 }
                             } elseif (RelationHelper::isPivoted($attributes['type'])) {
-                                foreach ($this->$relation()->get() as $item) {
-                                    $copy->$relation()->attach($item);
-                                }
+                                logger(self::class . " {$this->getKey()}: duplicating pivots via $relation ({$attributes['type']})");
+                                $copy->$relation()->syncWithoutDetaching($this->$relation()->get());
                             } else {
-                                logger()->debug('skipping duplication of: ' . $attributes['type']);
+                                logger(self::class . " {$this->getKey()}: skipping duplication of $relation ({$attributes['type']})");
                             }
                         }
                     }
@@ -252,69 +316,5 @@ trait HasRevisions
     public function deleteAllRevisions(): void
     {
 
-    }
-
-    /**
-     * Is this model the first revision
-     *
-     * @return bool
-     */
-    public function getNewAttribute(): bool
-    {
-        return $this->revision->isNew();
-    }
-
-    /**
-     * Is this model the latest revision
-     *
-     * @return bool
-     */
-    public function getLatestAttribute(): bool
-    {
-        return $this->revision->isLatest();
-    }
-
-    /**
-     * Is this model updated on the given checkpoint moment
-     *
-     * @param  Checkpoint  $moment
-     * @return bool
-     */
-    public function isUpdatedAt(Checkpoint $moment): bool
-    {
-        return $this->revision->isUpdatedAt($moment);
-    }
-
-    /**
-     * Is this model new on the given checkpoint moment
-     *
-     * @param  Checkpoint  $moment
-     * @return bool
-     */
-    public function isNewAt(Checkpoint $moment): bool
-    {
-        return $this->revision->isNewAt($moment);
-    }
-
-    /**
-     * Return the columns to ignore when creating a copy of a model.
-     * Gets passed to replicate() in saveAsRevision().
-     *
-     * @return array
-     */
-    public function getExcludedColumns(): array
-    {
-        return $this->getRevisionUnwatched();
-    }
-
-    /**
-     * Modify the contents of the unwatched property.
-     * Useful for adjusting what columns should be default when creating a new revision on a child relationship.
-     *
-     * @param  null  $unwatched
-     */
-    public function setRevisionUnwatched($unwatched = null): void
-    {
-        $this->unwatched = $unwatched ?? $this->getRevisionUnwatched();
     }
 }
