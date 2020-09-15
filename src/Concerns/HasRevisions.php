@@ -195,6 +195,7 @@ trait HasRevisions
                 'revisionable_id' => $this->id,
                 'revisionable_type' => self::class,
                 'original_revisionable_id' => $this->id,
+                'created_at' => $this->freshRevisionCreatedAt(),
             ];
         }
         // when values is empty, we want to write in the data as used for lookup
