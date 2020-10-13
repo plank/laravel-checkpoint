@@ -2,11 +2,13 @@
 
 namespace Plank\Checkpoint\Concerns;
 
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Models\Checkpoint;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 
 /**
@@ -18,9 +20,9 @@ trait HasCheckpointRelations
 {
     /**
      * Return the checkpoint this model belongs to
-     * @return hasOneThrough
+     * @return HasOneThrough
      */
-    public function checkpoint(): hasOneThrough
+    public function checkpoint(): HasOneThrough
     {
         $revision = config('checkpoint.revision_model', Revision::class);
         $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
@@ -28,22 +30,28 @@ trait HasCheckpointRelations
             $checkpoint,
             $revision,
             'revisionable_id',
-            'id',
-            'id',
+            (new $checkpoint)->getKeyName(),
+            (new $revision)->getKeyName(),
             $revision::CHECKPOINT_ID
         )->where('revisionable_type', self::class);
     }
 
     /**
-     * Get all revisions representing this model
-     *
-     * @return MorphOneOrMany
+     * Return the checkpoints associated with all the revisions of this model
+     * @return HasManyThrough
      */
-    public function revisions()
+    public function checkpoints()
     {
-        //todo
-        //$model = config('checkpoint.revision_model', Revision::class);
-        //return $this->morphMany($model, 'revisionable', 'revisionable_type', 'original_revisionable_id');
+        $revision = config('checkpoint.revision_model', Revision::class);
+        $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
+        return $this->hasManyThrough(
+            $checkpoint,
+            $revision,
+            'original_revisionable_id',
+            (new $checkpoint)->getKeyName(),
+            'first_revision_id',
+            $revision::CHECKPOINT_ID
+        )->where('revisionable_type', self::class);
     }
 
     /**
@@ -58,13 +66,34 @@ trait HasCheckpointRelations
     }
 
     /**
+     * Get all revisions representing this model
+     *
+     * @return MorphOneOrMany
+     */
+    public function revisions()
+    {
+        return $this->morphMany(config('checkpoint.revision_model', Revision::class),
+            'revisionable', 'revisionable_type', 'original_revisionable_id', 'first_revision_id');
+    }
+
+    /**
+     * Get the model at its first revision
+     *
+     * @return HasOne
+     */
+    public function initial(): HasOne
+    {
+        return $this->hasOne(self::class, 'id', 'first_revision_id')->withoutRevisions();
+    }
+
+    /**
      * Get the model at the previous revision
      *
-     * @return MorphTo
+     * @return HasOne
      */
-    public function older(): MorphTo
+    public function older(): HasOne
     {
-        return $this->revision->previous->revisionable();
+        return $this->hasOne(self::class, 'id', 'previous_revision_id')->withoutRevisions();
     }
 
     /**
@@ -75,17 +104,6 @@ trait HasCheckpointRelations
     public function newer(): MorphTo
     {
         return $this->revision->next->revisionable();
-    }
-
-
-    /**
-     * Get the model at its original revision
-     *
-     * @return MorphTo
-     */
-    public function initial(): MorphTo
-    {
-        return $this->revision->initialRevisionable();
     }
 
 }

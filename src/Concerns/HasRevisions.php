@@ -80,6 +80,27 @@ trait HasRevisions
     }
 
     /**
+     * Get the id of the original revisioned item
+     * todo: change to subSelect
+     *
+     * @return mixed
+     */
+    public function getFirstRevisionIdAttribute()
+    {
+        return $this->revision->original_revisionable_id;
+    }
+    /**
+     * Get the id of the previous revisioned item
+     * todo: change to subSelect
+     *
+     * @return mixed
+     */
+    public function getPreviousRevisionIdAttribute()
+    {
+        return $this->revision->previous_revision_id;
+    }
+
+    /**
      * Is this model the first revision
      *
      * @return bool

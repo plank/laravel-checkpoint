@@ -86,7 +86,7 @@ class RevisionableObserver
      */
     public function deleting($model)
     {
-        if (method_exists($model, 'bootSoftDeletes')) {
+        if (method_exists($model, 'bootSoftDeletes') && !$model->isForceDeleting()) {
             $model->saveAsRevision();
         }
     }
@@ -99,7 +99,7 @@ class RevisionableObserver
      */
     public function deleted($model)
     {
-        if (!method_exists($model, 'bootSoftDeletes') || $model->forceDeleting === true) {
+        if (!method_exists($model, 'bootSoftDeletes') || $model->isForceDeleting()) {
             $model->revision()->delete();
         }
     }
@@ -122,17 +122,6 @@ class RevisionableObserver
      * @return void
      */
     public function restored($model)
-    {
-        //
-    }
-
-    /**
-     * Handle the parent model "force deleted" event.
-     *
-     * @param  $model
-     * @return void
-     */
-    public function forceDeleted($model)
     {
         //
     }

@@ -1,6 +1,6 @@
 {
     "name": "plank/laravel-checkpoint",
-    "description": "A package for keeping a history of your models' revisions and accessing your data as it as at an older date.",
+    "description": "A package for keeping a history of your models' revisions and accessing your data as it was at an older date.",
     "keywords": [
         "plank",
         "checkpoint",
