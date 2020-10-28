@@ -54,6 +54,8 @@ Table: ```revisions```
 | metadata                  | json                | ✗         | null            |
 | previous_revision_id      | unsignedBigInteger  | ✗         | null            |
 | checkpoint_id             | unsignedBigInteger  | ✗         | null            |
+| created_at                | timestamp           | ✗         |                 |
+| updated_at                | timestamp           | ✗         |                 |
 
 ## Usage
 ### Revisioning Models
