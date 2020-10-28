@@ -5,6 +5,35 @@
 [![Quality Score](https://img.shields.io/scrutinizer/g/plank/versionable.svg?style=flat-square)](https://scrutinizer-ci.com/g/plank/versionable)
 [![Total Downloads](https://img.shields.io/packagist/dt/plank/versionable.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
 
+## Table of Contents
+- [Laravel Checkpoint](#laravel-checkpoint)
+  - [Table of Contents](#table-of-contents)
+  - [Why Use This Package](#why-use-this-package)
+  - [Installation](#installation)
+  - [Concepts](#concepts)
+    - [Checkpoints](#checkpoints)
+    - [Revisions](#revisions)
+  - [Usage](#usage)
+    - [Revisioning Models](#revisioning-models)
+      - [What gets Revisioned?](#what-gets-revisioned)
+      - [Start Revisioning Command](#start-revisioning-command)
+    - [Query Scopes](#query-scopes)
+      - [at($moment)](#atmoment)
+      - [since($moment)](#sincemoment)
+      - [temporal($upper, $lower)](#temporalupper-lower)
+      - [withoutRevisions()](#withoutrevisions)
+    - [Revision Metadata & Uniqueness](#revision-metadata--uniqueness)
+    - [Unwatched Fields](#unwatched-fields)
+    - [Should Revision](#should-revision)
+    - [Excluded Columns](#excluded-columns)
+    - [Excluded Relations](#excluded-relations)
+    - [Testing](#testing)
+    - [Changelog](#changelog)
+  - [Contributing](#contributing)
+    - [Security](#security)
+  - [Credits](#credits)
+  - [License](#license)
+
 ## Why Use This Package
 Do you need to store the state of how your models change over time? Do you need a way to query and view the state of your models at different points in time? If the answer is yes, then this package is for you! 
 
