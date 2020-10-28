@@ -40,8 +40,6 @@ states, the notion that an *Entity* (instance of a *Model*) is associated with e
 
 The same entity is linked via the ```original_revisionable_id``` field.
 
-The ```latest``` field is used to denote the latest version of an *Entity* at a given ```Checkpoint```.
-
 Table: ```revisions```
 
 | Field                     |  Type               | Required  |  Default        |
@@ -68,10 +66,10 @@ via child relationships, and will create new many-to-many relationships in pivot
 
 #### Start Revisioning Command
 If you have an existing project with *Models* already populated in the database, the ```php artisan checkpoint:start``` 
-command will create begin revisioning all of the *Models* you have included the ```HasRevsions``` trait. 
+command will begin revisioning all of the *Models* which are using the ```HasRevsions``` trait. 
 
 ### Query Scopes
-The way this package achieves it's goal is by adding global scopes when querying models that have revisions. 
+The way this package achieves it's goal is by adding scopes (and one global scope) to query models that have revisions. 
 
 #### at($moment)
 ```php
@@ -82,8 +80,8 @@ at($moment = null)
 ```
 This is the default global query scope added to all queries on a *Model* with ```Revision```s.
 
-This query scope will limit the query to return the *Model* whose revision has the max auto-incremented id, where the
-```Revision``` was created at or before the given moment. 
+This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key, where
+the ```Revision``` was created at or before the given moment. 
 
 The moment can either be an instance of a ```Checkpoint``` 
 using its ```checkpoint_date``` field, or a string representation of a date compatible with ```Carbon::parse```, or a 
@@ -96,12 +94,11 @@ using its ```checkpoint_date``` field, or a string representation of a date comp
  */
 since($moment = null)
 ```
-This query scope will limit the query to return the *Model* whose revision has the max auto-incremented id, where the
-```Revision``` was created after the given moment. 
+This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key, where
+the ```Revision``` was created after the given moment. 
 
-The moment can either be an instance of a ```Checkpoint``` using its 
-```checkpoint_date``` field, or a string representation of a date compatible with ```Carbon::parse```, or a ```Carbon```
-instance.
+The moment can either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, or a string
+representation of a date compatible with ```Carbon::parse```, or a ```Carbon``` instance.
 
 #### temporal($upper, $lower)
 ```php
@@ -111,9 +108,9 @@ instance.
  */
 temporal($upper = null, $lower = null)
 ```
-This query scope will limit the query to return the *Model* whose revision has the max auto-incremented id created at 
-or before ```$upper```. This method can also limit the query to the *Model* whose revision has the max auto-incremented
-id created after ```$lower```. 
+This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key created at 
+or before ```$upper```. This method can also limit the query to the *Model* whose revision has the max primary key
+created after ```$lower```. 
 
 Each argument operates independently of each other and ```$upper``` and ```$lower``` can 
 either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, or a string representation of a date
