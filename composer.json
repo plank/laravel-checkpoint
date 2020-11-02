@@ -27,7 +27,7 @@
     "require": {
         "php": "^7.1.3",
         "ext-json": "*",
-        "illuminate/support": "5.8.*|^6.0|^7.0",
+        "illuminate/support": "5.8.*|^6.0|^7.0|^8.0",
         "neurony/laravel-duplicate": "^3.0|^4.0"
     },
     "require-dev": {
