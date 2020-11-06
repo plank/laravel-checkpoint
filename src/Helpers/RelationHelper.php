@@ -2,6 +2,8 @@
 
 namespace Plank\Checkpoint\Helpers;
 
+use SplFileObject;
+use ReflectionMethod;
 use ReflectionException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -15,16 +17,15 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
- * Class RelationHelper
+ * Helper Class to reliably get all existing relations on a model, not just eager-loaded ones
  *
- * Originally from neurony/laravel-duplicate package, but package is now abandonned supports only up to laravel 7.x
- *
- * @package Plank\Checkpoint\Helpers
+ * Originally from neurony/laravel-duplicate package, but that package is now abandoned
+ * Improved to cache a model's relations in-memory to speed up recurring calls
  */
 class RelationHelper
 {
     /**
-     * List of all relations defined on a model class.
+     * List of all relations defined on each parsed model class.
      *
      * @var array
      */
@@ -186,46 +187,55 @@ class RelationHelper
      * Not just the eager loaded ones present in the $relations Eloquent property.
      *
      * @param Model $model
+     * @param bool $refresh
      * @return array
      * @throws ReflectionException
      */
-    public static function getModelRelations(Model $model): array
+    public static function getModelRelations(Model $model, $refresh = false): array
     {
-        static::$relations = [];
+        $class = get_class($model);
+        // Check if the relations on this model were already parsed
+        if (!$refresh && array_key_exists($class, static::$relations)) {
+            return static::$relations[$class];
+        }
+
+        static::$relations[$class] = [];
 
         foreach (get_class_methods($model) as $method) {
-            if (! method_exists(Model::class, $method)) {
-                $reflection = new ReflectionMethod($model, $method);
-                $file = new SplFileObject($reflection->getFileName());
-                $code = '';
+            if (method_exists(Model::class, $method)) {
+                continue; // when a method exists it can't be a relation
+            }
 
-                $file->seek($reflection->getStartLine() - 1);
+            $reflection = new ReflectionMethod($model, $method);
+            $file = new SplFileObject($reflection->getFileName());
+            $code = '';
 
-                while ($file->key() < $reflection->getEndLine()) {
-                    $code .= $file->current();
-                    $file->next();
-                }
+            $file->seek($reflection->getStartLine() - 1);
 
-                $code = trim(preg_replace('/\s\s+/', '', $code));
-                $begin = strpos($code, 'function(');
-                $code = substr($code, $begin, strrpos($code, '}') - $begin + 1);
+            while ($file->key() < $reflection->getEndLine()) {
+                $code .= $file->current();
+                $file->next();
+            }
 
-                foreach (static::$relationTypes as $type) {
-                    if (stripos($code, '$this->'.$type.'(')) {
-                        $relation = $model->$method();
+            $code = trim(preg_replace('/\s\s+/', '', $code));
+            $begin = strpos($code, 'function(');
+            $code = substr($code, $begin, strrpos($code, '}') - $begin + 1);
 
-                        if ($relation instanceof Relation) {
-                            static::$relations[$method] = [
-                                'type' => get_class($relation),
-                                'model' => $relation->getRelated(),
-                                'original' => $relation->getParent(),
-                            ];
-                        }
+            foreach (static::$relationTypes as $type) {
+                if (stripos($code, '$this->'.$type.'(')) {
+                    $relation = $model->$method();
+
+                    if ($relation instanceof Relation) {
+                        static::$relations[$class][$method] = [
+                            'type' => get_class($relation),
+                            'model' => $relation->getRelated(),
+                            'original' => $relation->getParent(),
+                        ];
                     }
                 }
             }
         }
 
-        return static::$relations;
+        return static::$relations[$class];
     }
 }
