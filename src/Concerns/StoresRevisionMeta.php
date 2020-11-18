@@ -2,12 +2,7 @@
 
 namespace Plank\Checkpoint\Concerns;
 
-use Plank\Checkpoint\Observers\RevisionableObserver;
-use Plank\Checkpoint\Scopes\RevisionScope;
-
 /**
- * Trait StoresMeta
- *
  * Allows saving specific columns onto the revision metadata field and ensures the
  * model can retrieve those columns from meta if they don't exist in the main table.
  * Mainly used for columns that cannot contain duplicate entries (ex: ordering)

@@ -113,8 +113,7 @@ This query scope will limit the query to return the *Model* whose ```Revision```
 the ```Revision``` was created at or before the given moment. 
 
 The moment can either be an instance of a ```Checkpoint``` 
-using its ```checkpoint_date``` field, or a string representation of a date compatible with ```Carbon::parse```, or a 
-```Carbon``` instance.
+using its ```checkpoint_date``` field, a string representation of a date or a ```Carbon``` instance.
 
 #### since($moment)
 ```php
@@ -126,8 +125,8 @@ since($moment = null)
 This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key, where
 the ```Revision``` was created after the given moment. 
 
-The moment can either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, or a string
-representation of a date compatible with ```Carbon::parse```, or a ```Carbon``` instance.
+The moment can either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, a string
+representation of a date or a ```Carbon``` instance.
 
 #### temporal($upper, $lower)
 ```php
@@ -135,15 +134,15 @@ representation of a date compatible with ```Carbon::parse```, or a ```Carbon``` 
  * @param $upper Checkpoint|Carbon|string
  * @param $upper Checkpoint|Carbon|string
  */
-temporal($upper = null, $lower = null)
+temporal($until = null, $since = null)
 ```
 This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key created at 
-or before ```$upper```. This method can also limit the query to the *Model* whose revision has the max primary key
-created after ```$lower```. 
+or before ```$until```. This method can also limit the query to the *Model* whose revision has the max primary key
+created after ```$since```. 
 
-Each argument operates independently of each other and ```$upper``` and ```$lower``` can 
-either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, or a string representation of a date
-compatible with ```Carbon::parse```, or a ```Carbon``` instance.
+Each argument operates independently of each other and ```$until``` and ```$since``` can 
+either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, a string representation of a 
+date or a ```Carbon``` instance.
 
 #### withoutRevisions()
 ```php

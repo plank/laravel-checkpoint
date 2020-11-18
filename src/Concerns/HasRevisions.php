@@ -13,12 +13,12 @@ use Plank\Checkpoint\Helpers\RelationHelper;
 use Plank\Checkpoint\Observers\RevisionableObserver;
 
 /**
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at()
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since()
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at($until)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since($since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal($until, $since)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
  *
- * @mixin \Illuminate\Database\Eloquent\Model
+ * @mixin \Eloquent
  */
 trait HasRevisions
 {
@@ -229,8 +229,7 @@ trait HasRevisions
     }
 
     /**
-     * Set a protected unwatched array on your model
-     * to skip revisioning on specific columns.
+     * Set a protected unwatched array on your model to skip revisioning on specific columns
      *
      * @return array
      */
@@ -251,8 +250,7 @@ trait HasRevisions
     }
 
     /**
-     * Set the relationships to be ignored during duplication.
-     * Supply an array of relation method names.
+     * Get an array of the relationships to be ignored during duplication
      *
      * @return array
      */

@@ -10,6 +10,40 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphPivot;
 
+/**
+ * @property int $id
+ * @property string $revisionable_type
+ * @property int $revisionable_id
+ * @property int $original_revisionable_id
+ * @property int|null $previous_revision_id
+ * @property int|null $checkpoint_id
+ * @property mixed|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $revisionable
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $initialRevisionable
+ * @property-read \Illuminate\Database\Eloquent\Collection|Revision[] $allRevisions
+ * @property-read int|null $all_revisions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection|Revision[] $otherRevisions
+ * @property-read int|null $other_revisions_count
+ * @property-read Revision|null $next
+ * @property-read Revision|null $previous
+ * @property-read Checkpoint|null $checkpoint
+ * @method static Builder|Revision newModelQuery()
+ * @method static Builder|Revision newQuery()
+ * @method static Builder|Revision query()
+ * @method static Builder|Revision whereId($value)
+ * @method static Builder|Revision whereRevisionableId($value)
+ * @method static Builder|Revision whereRevisionableType($value)
+ * @method static Builder|Revision whereOriginalRevisionableId($value)
+ * @method static Builder|Revision wherePreviousRevisionId($value)
+ * @method static Builder|Revision whereCheckpointId($value)
+ * @method static Builder|Revision whereMetadata($value)
+ * @method static Builder|Revision whereCreatedAt($value)
+ * @method static Builder|Revision whereUpdatedAt($value)
+ * @method static Builder|Revision latestIds($until = null, $since = null)
+ * @mixin \Eloquent
+ */
 class Revision extends MorphPivot
 {
     /**
@@ -34,7 +68,7 @@ class Revision extends MorphPivot
     protected $keyType = 'int';
 
     /**
-     * Prevent Eloquent from overriding uuid with `lastInsertId`.
+     * Indicates if the IDs are auto-incrementing.
      *
      * @var bool
      */
@@ -202,9 +236,9 @@ class Revision extends MorphPivot
     }
 
     /**
-     * Return all the revisions sibling that share the same item
+     * Return all the revisions sibling that share the same item except the current one
      *
-     * @return
+     * @return HasMany
      */
     public function otherRevisions(): HasMany
     {
@@ -212,9 +246,11 @@ class Revision extends MorphPivot
     }
 
     /**
+     * Retrieve the latest revision ids within the boundary window given valid checkpoints, carbon or datetime strings
+     *
      * @param  Builder  $q
-     * @param  Checkpoint|Carbon|string|null  $until
-     * @param  Checkpoint|Carbon|string|null  $since
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string|null  $until  valid checkpoint, carbon or datetime string
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string|null  $since  valid checkpoint, carbon or datetime string
      * @return Builder
      */
     public function scopeLatestIds(Builder $q, $until = null, $since = null)

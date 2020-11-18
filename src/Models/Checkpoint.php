@@ -1,4 +1,5 @@
 <?php
+
 namespace Plank\Checkpoint\Models;
 
 use Illuminate\Support\Collection;
@@ -7,6 +8,29 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
+/**
+ * @property int $id
+ * @property string $title
+ * @property string $checkpoint_date
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Revision[] $revisions
+ * @property-read int|null $revisions_count
+ * @method static Builder|Checkpoint newModelQuery()
+ * @method static Builder|Checkpoint newQuery()
+ * @method static Builder|Checkpoint query()
+ * @method static Builder|Checkpoint whereId($value)
+ * @method static Builder|Checkpoint whereTitle($value)
+ * @method static Builder|Checkpoint whereCheckpointDate($value)
+ * @method static Builder|Checkpoint whereCreatedAt($value)
+ * @method static Builder|Checkpoint whereUpdatedAt($value)
+ * @method static Builder|Checkpoint closestTo($moment, $operator = '<=')
+ * @method static Builder|Checkpoint newerThan($moment, $strict = true)
+ * @method static Builder|Checkpoint olderThan($moment, $strict = true)
+ * @method static Builder|Checkpoint newerThanEquals($moment)
+ * @method static Builder|Checkpoint olderThanEquals($moment)
+ * @mixin \Eloquent
+ */
 class Checkpoint extends Model
 {
 
@@ -32,7 +56,7 @@ class Checkpoint extends Model
     protected $keyType = 'int';
 
     /**
-     * Prevent Eloquent from overriding uuid with `lastInsertId`.
+     * Indicates if the IDs are auto-incrementing.
      *
      * @var bool
      */
@@ -72,7 +96,7 @@ class Checkpoint extends Model
      *
      * @return string
      */
-    public function getCheckpointDateColumn()
+    public function getCheckpointDateColumn(): string
     {
         return static::CHECKPOINT_DATE;
     }
@@ -80,7 +104,7 @@ class Checkpoint extends Model
     /**
      * Get the "checkpoint date" field.
      *
-     * @return string
+     * @return \Illuminate\Support\Carbon|string
      */
     public function getCheckpointDate()
     {
@@ -98,10 +122,9 @@ class Checkpoint extends Model
 
     /**
      * Return the checkpoint right before this one
-     * note: calculated via checkpoint date, ids are sequential
-     *       but then you would locked in to auto increments
+     * note: calculated via checkpoint date, ids are sequential but then you would be locked in to use auto-increments
      *
-     * @return Checkpoint|Model|object|null
+     * @return Checkpoint|Model|null
      */
     public function previous()
     {
@@ -111,7 +134,7 @@ class Checkpoint extends Model
     /**
      * Return the checkpoint right after this one
      *
-     * @return Checkpoint|Model|object|null
+     * @return Checkpoint|Model|null
      */
     public function next()
     {
@@ -133,10 +156,10 @@ class Checkpoint extends Model
      * Retrieve all models of a specific type directly associated with this checkpoint
      * more efficient than models since it performs only a single query
      *
-     * @param string $type class name of the models you want to fetch
+     * @param  string  $type  class name of the models you want to fetch
      * @return MorphToMany
      */
-    public function modelsOf($type): MorphToMany
+    public function modelsOf(string $type): MorphToMany
     {
         $rev = config('checkpoint.revision_model', Revision::class);
         return $this->morphedByMany($type, 'revisionable', 'revisions', 'checkpoint_id')
@@ -146,7 +169,7 @@ class Checkpoint extends Model
 
     /**
      * Retrieve all models directly associated with this checkpoint
-     * More expensive than just calling
+     * More expensive than just calling modelsOf() with specific class / type
      *
      * @return Collection
      */
