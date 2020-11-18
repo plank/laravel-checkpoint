@@ -48,9 +48,7 @@ class RevisionableObserver
      */
     public function created($model)
     {
-        if ($model->shouldRevision()) {
-            $model->updateOrCreateRevision();
-        }
+        $model->startRevision();
     }
 
     /**
@@ -63,7 +61,7 @@ class RevisionableObserver
     {
         // Check if any column is dirty and filter out the unwatched fields
         if(!empty(array_diff(array_keys($model->getDirty()), $model->getRevisionUnwatched()))) {
-            $model->saveAsRevision();
+            $model->performRevision();
         }
     }
 
@@ -87,7 +85,7 @@ class RevisionableObserver
     public function deleting($model)
     {
         if (method_exists($model, 'bootSoftDeletes') && !$model->isForceDeleting()) {
-            $model->saveAsRevision();
+            $model->performRevision();
         }
     }
 
