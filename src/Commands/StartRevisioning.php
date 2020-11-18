@@ -4,6 +4,8 @@
 namespace Plank\Checkpoint\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Container\Container;
+use Illuminate\Support\Facades\File;
 
 class StartRevisioning extends Command
 {
@@ -13,7 +15,7 @@ class StartRevisioning extends Command
      * @var string
      */
     protected $signature = 'checkpoint:start
-                            {class? : a specified class to start revisioning on}
+                            {class? : specify one or more classes to start revisions on}
                             {--on= : The checkpoint ID that all revisions should be attached to}
                             {--C|with-checkpoint : also create a starting checkpoint to attach all revisions to}';
 
@@ -37,7 +39,7 @@ class StartRevisioning extends Command
     /**
      * Execute the console command.
      *
-     * @return int
+     * @return mixed
      */
     public function handle()
     {
@@ -50,6 +52,19 @@ class StartRevisioning extends Command
         }
 
         if ($class = $this->argument('class')) {
+            $models = explode(',', str_replace(' ', '', $class));
+        } else {
+            // TODO: maybe pull base paths from composer psr-4, to support modular laravel codebases??
+            $models = collect(File::allFiles(app_path()))->map(function ($item) {
+                $path = $item->getRelativePathName();
+                return sprintf('\%s%s', Container::getInstance()->getNamespace(),
+                    str_replace('/', '\\', substr($path, 0, strrpos($path, '.'))));
+            })->filter(function ($model) {
+                return method_exists($model, 'bootHasRevisions');
+            });
+        }
+
+        foreach ($models as $class) {
             $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
                foreach ($results as $item) {
                    $item->updateOrCreateRevision();
@@ -60,11 +75,6 @@ class StartRevisioning extends Command
                    $revision->save();
                }
             });
-        } else {
-            // TODO: make this discover revisionable models, and boot them one by one.
-            $this->error('Please pass in the FQCN of a revisionable model.');
-            return 1;
         }
-            return 0;
     }
 }
