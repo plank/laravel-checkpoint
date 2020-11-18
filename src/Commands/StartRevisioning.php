@@ -69,8 +69,6 @@ class StartRevisioning extends Command
                foreach ($results as $item) {
                    $item->startRevision();
                    $revision = $item->revision;
-                   // TODO: shouldn't be required for global query anymore.
-                   $revision->created_at = $item->freshRevisionCreatedAt();
                    $revision->checkpoint()->associate($checkpoint);
                    $revision->save();
                }

@@ -134,16 +134,6 @@ trait HasRevisions
     }
 
     /**
-     * Override to change what is stored in a new revision's created at timestamp
-     *
-     * @return string
-     */
-    protected function freshRevisionCreatedAt(): string
-    {
-        return $this->freshTimestampString();
-    }
-
-    /**
      * Return the columns to ignore when creating a copy of a model.
      * Gets passed to replicate() in saveAsRevision().
      *
