@@ -5,7 +5,6 @@ namespace Plank\Checkpoint\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
-use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 
 class RevisionScope implements Scope
@@ -55,32 +54,42 @@ class RevisionScope implements Scope
      */
     protected function addTemporal(Builder $builder)
     {
-        $builder->macro('temporal', function (Builder $builder, $upper = null, $lower = null) {
+        // Constrain the scope to a specific window of time using valid checkpoints, carbon objects or datetime strings
+        $builder->macro('temporal', function (Builder $builder, $until = null, $since = null) {
             $model = $builder->getModel();
-            $revision = config('checkpoint.revision_model', Revision::class);
+            $revision = new Revision();
 
             $builder->withoutGlobalScope($this);
             // worst case execution plan : #reads = all rows in your table * all checkpoints * all revisions
-            // the timestamps subquery is the most expensive, reading all revisions from disk, try to build an index to fit it.
+            // avg case execution plan: all rows in your table * 1 revision * 1 revision * 0..max amount of checkpoints
 
-            //TODO: watch out for hardcoded columns names and relation names
+            // METHOD 1: Join current table on revisions, join the result on closest subquery
 
-            // METHOD 1: Join current table on revisions, join the result on timestamps subquery
-            /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                 ->joinSub(
-                    $revision::latestIds($upper, $lower), 
-                    'temporal', 'temporal.closest', '=', 
-                    (new $revision)->getQualifiedKeyName()
-                 )->where('revisionable_type', '=', get_class($model));*/
+            // METHOD 2 : Join current table on revisions, filter out by original and type index, use a where in for the closest ids subquery
+/*            $builder->join("{$revision->getTable()} as _r", $model->getQualifiedKeyName(), '=', 'revisionable_id')
+                ->whereIn("_r.{$revision->getKeyName()}",
+                    $revision::latestIds($until, $since)
+                        ->whereColumn('original_revisionable_id', '_r.original_revisionable_id')
+                        ->whereType($model)
+                )->where('revisionable_type', '=', get_class($model));
 
-            // METHOD 2 : Join current table on revisions, filter out by revisionable_type, use a whereIn subquery for timestamps
-            /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                ->whereIn((new $revision)->getQualifiedKeyName(), $revision::latestIds($upper, $lower))
-                ->where('revisionable_type', '=', get_class($model));*/
+            // when using a join, you need to specific the select manually to avoid grabbing all the columns
+            // but when using addSelect and giving it a subquery, laravel automatically selects the main table
+            // causing duplicate columns
+            $select = $model->getTable().'.*';
+            $columns = $builder->getQuery()->columns;
+            if ($columns === null || !in_array($select, $columns, true)) {
+                $builder->addSelect($select);
+            }
+            $builder->addSelect(['_r.metadata']);*/
             
-            // METHOD 3 : Uses a where exists wrapper, laravel handles the revisionable id/type, use a whereIn subquery for timestamps
-            $builder->whereHas('revision', function (Builder $query) use ($revision, $upper, $lower) {
-               $query->whereIn((new $revision)->getQualifiedKeyName(), $revision::latestIds($upper, $lower));
+            // METHOD 3 : Uses a where exists wrapper on a where in subquery for closest timestamps
+            $builder->whereHas('revision', function (Builder $query) use ($model, $until, $since) {
+                $query->whereIn($query->getModel()->getQualifiedKeyName(),
+                    $query->newModelInstance()->setTable('_r')->from($query->getModel()->getTable(), '_r')
+                        ->latestIds($until, $since)
+                        ->whereColumn($query->qualifyColumn('original_revisionable_id'), '_r.original_revisionable_id')
+                        ->whereType($model));
             });
 
             return $builder;
