@@ -70,25 +70,109 @@ trait HasRevisions
     }
 
     /**
-     * Get the id of the original revisioned item
-     * todo: change to subSelect
+     * Add the previous and next scopes loading their respective relations
      *
+     * @param  Builder  $builder
      * @return mixed
      */
-    public function getFirstRevisionIdAttribute()
+    public function scopeWithRevisions(Builder $builder)
     {
-        return $this->revision->original_revisionable_id;
+        return $builder->withPrevious()->withNext();
     }
+
+    /**
+     * Get the id of the initial revisioned item
+     *
+     * @param  Builder  $builder
+     * @return mixed
+     */
+    public function scopeWithInitial(Builder $builder)
+    {
+        return $builder->addSelect([
+            'initial_id' => Revision::select('original_revisionable_id')
+                ->whereColumn('revisionable_id', $this->getQualifiedKeyName())
+                ->whereType(self::class)
+        ])->with('initial');
+    }
+
     /**
      * Get the id of the previous revisioned item
-     * todo: change to subSelect
      *
+     * @param  Builder  $builder
      * @return mixed
      */
-    public function getPreviousRevisionIdAttribute()
+    public function scopeWithPrevious(Builder $builder)
     {
-        return $this->revision->previous_revision_id;
+        return $builder->addSelect([
+            'previous_id' => Revision::select('revisionable_id')
+                ->whereIn('id', Revision::select('previous_revision_id')
+                    ->whereColumn('revisionable_id', $this->getQualifiedKeyName())
+                    ->whereType($this))
+        ])->with('older');
     }
+
+    /**
+     * Get the id of the next revisioned item
+     *
+     * @param  Builder  $builder
+     * @return mixed
+     */
+    public function scopeWithNext(Builder $builder)
+    {
+        return $builder->addSelect([
+            'next_id' => Revision::from('revisions as r')
+                ->whereColumn('revisionable_id', $this->getQualifiedKeyName())
+                ->whereType($this)
+                ->selectSub(
+                    Revision::select('id')
+                        ->whereColumn('previous_revision_id', 'r.id')
+                        ->whereType($this), 'sub'
+                )
+        ])->with('newer');
+    }
+
+    /**
+     * Get the id of the initial revisionable
+     *
+     * @param  $value
+     * @return int
+     */
+    public function getInitialIdAttribute($value)
+    {
+        if ($value !== null || array_key_exists('initial_id', $this->attributes)) {
+            return $value;
+        }
+        return $this->revision->original_revisionable_id ?? null;
+    }
+
+    /**
+     * Get the id of the previous revisionable
+     *
+     * @param  $value
+     * @return int
+     */
+    public function getPreviousIdAttribute($value)
+    {
+        if ($value !== null || array_key_exists('previous_id', $this->attributes)) {
+            return $value;
+        }
+        return $this->revision->previous->revisionable_id ?? null;
+    }
+
+    /**
+     * Get the id of the next revisionable
+     *
+     * @param  $value
+     * @return int
+     */
+    public function getNextIdAttribute($value)
+    {
+        if ($value !== null || array_key_exists('next_id', $this->attributes)) {
+            return $value;
+        }
+        return $this->revision->next->revisionable_id ?? null;
+    }
+
 
     /**
      * Is this model the first revision
