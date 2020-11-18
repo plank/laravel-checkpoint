@@ -23,7 +23,6 @@ class CheckpointServiceProvider extends ServiceProvider
             foreach (File::glob(__DIR__ . '/../database/migrations/*') as $migration) {
                 $basename = strstr($migration, 'create');
                 if (empty(File::glob(database_path('migrations/*' . $basename)))) {
-                    config()->set('checkpoint.runs_migrations', true);
                     $this->publishes([
                         $migration => database_path("migrations/". date('Y_m_d_His') . "_" . $basename)
                     ], 'migrations');
@@ -31,7 +30,7 @@ class CheckpointServiceProvider extends ServiceProvider
             }
 
             // Load default migrations if the runs_migrations toggle is true in the config (or if any of the expected files is missing)
-            if (config('checkpoint.runs_migrations', false)) {
+            if (config('checkpoint.run_migrations')) {
                 $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
             }
 

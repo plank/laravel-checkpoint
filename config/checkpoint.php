@@ -6,6 +6,12 @@
 return [
 
     /*
+    | Should Checkpoint run the default migrations
+    |
+    */
+    'run_migrations' => env('RUN_CHECKPOINT_MIGRATIONS', true),
+
+    /*
     |
     | The full namespace to your User model class.
     |
