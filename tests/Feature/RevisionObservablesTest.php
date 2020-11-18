@@ -20,6 +20,7 @@ class RevisionObservablesTest extends TestCase
         $revisions = Revision::latest()->get();
         $this->assertCount(1, $revisions);
         $this->assertEquals($post->id, $revisions->first()->revisionable_id);
+        $this->assertEquals($post->id, $post->revision->revisionable_id);
     }
 
     /**
@@ -55,7 +56,23 @@ class RevisionObservablesTest extends TestCase
     /**
      * @test
      */
-    public function forced_deleted_posts_remove_item_and_revision(): void
+    public function restored_posts_are_revisioned(): void
+    {
+        $post = factory(Post::class)->create();
+        $this->assertCount(1, Post::all());
+
+        $post->delete();
+        $post->restore();
+
+        $this->assertCount(1, Post::all());
+        $this->assertEquals(2, Post::withoutRevisions()->count());
+        $this->assertEquals(3, Post::withTrashed()->withoutRevisions()->count());
+    }
+
+    /**
+     * @test
+     */
+    public function force_deleted_posts_remove_item_and_revision(): void
     {
         $post = factory(Post::class)->create();
         $this->assertCount(1, Post::all());
