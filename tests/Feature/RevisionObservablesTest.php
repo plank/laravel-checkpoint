@@ -88,16 +88,28 @@ class RevisionObservablesTest extends TestCase
     /**
      * @test
      */
-    public function restored_posts_are_revisioned(): void
+    public function force_deleted_posts_preserves_revision_history(): void
     {
         $post = factory(Post::class)->create();
-        $this->assertCount(1, Post::all());
 
-        $post->delete();
-        $post->restore();
+        $original = clone $post;
+        $post->title .= ' v2';
+        $post->save();
+        $to_delete = clone $post;
+
+        $post->title .= ' v3';
+        $post->save();
 
         $this->assertCount(1, Post::all());
-        $this->assertEquals(2, Post::withoutRevisions()->count());
-        $this->assertEquals(3, Post::withTrashed()->withoutRevisions()->count());
+        $this->assertCount(3, Revision::all());
+
+        $to_delete->forceDelete();
+        $r1 = $original->revision()->first();
+        $r3 = $post->revision()->first();
+
+        $this->assertCount(2, Post::withoutRevisions()->get());
+        $this->assertCount(2, Revision::all());
+        $this->assertEquals($r1->id, $r3->previous_revision_id);
     }
+
 }
