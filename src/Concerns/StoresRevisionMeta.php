@@ -32,7 +32,7 @@ trait StoresRevisionMeta
     public function getMetadataAttribute()
     {
         if ($this->revision !== null) {
-            return json_decode($this->revision->metadata, true);
+            return $this->revision->metadata;
         }
         return [];
     }

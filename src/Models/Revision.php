@@ -72,6 +72,15 @@ class Revision extends MorphPivot
     ];
 
     /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'metadata' => 'array'
+    ];
+
+    /**
      * Get the name of the "checkpoint id" column.
      *
      * @return string
