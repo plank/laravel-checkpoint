@@ -50,7 +50,7 @@ trait HasRevisions
     /**
      * Register a revisioning model event with the dispatcher.
      *
-     * @param Closure|string $callback
+     * @param  Closure|string  $callback
      * @return void
      */
     public static function revisioning($callback): void
@@ -61,7 +61,7 @@ trait HasRevisions
     /**
      * Register a revisioned model event with the dispatcher.
      *
-     * @param Closure|string $callback
+     * @param  Closure|string  $callback
      * @return void
      */
     public static function revisioned($callback): void
@@ -88,10 +88,11 @@ trait HasRevisions
      */
     public function scopeWithInitial(Builder $builder)
     {
+        $revision = config('checkpoint.models.revision');
         return $builder->addSelect([
-            'initial_id' => Revision::select('original_revisionable_id')
+            'initial_id' => $revision::select('original_revisionable_id')
                 ->whereColumn('revisionable_id', $this->getQualifiedKeyName())
-                ->whereType(self::class)
+                ->whereType($this)
         ])->with('initial');
     }
 
@@ -103,11 +104,13 @@ trait HasRevisions
      */
     public function scopeWithPrevious(Builder $builder)
     {
+        $revision = config('checkpoint.models.revision');
         return $builder->addSelect([
-            'previous_id' => Revision::select('revisionable_id')
-                ->whereIn('id', Revision::select('previous_revision_id')
+            'previous_id' => $revision::select('revisionable_id')
+                ->whereIn('id', $revision::select('previous_revision_id')
                     ->whereColumn('revisionable_id', $this->getQualifiedKeyName())
-                    ->whereType($this))
+                    ->whereType($this)
+                )
         ])->with('older');
     }
 
@@ -119,15 +122,14 @@ trait HasRevisions
      */
     public function scopeWithNext(Builder $builder)
     {
+        $revision = config('checkpoint.models.revision');
         return $builder->addSelect([
-            'next_id' => Revision::from('revisions as r')
+            'next_id' => $revision::selectSub($revision::select('id')
+                    ->whereColumn('previous_revision_id', 'r.id')
+                    ->whereType($this), 'sub'
+                )->from('revisions as r')
                 ->whereColumn('revisionable_id', $this->getQualifiedKeyName())
                 ->whereType($this)
-                ->selectSub(
-                    Revision::select('id')
-                        ->whereColumn('previous_revision_id', 'r.id')
-                        ->whereType($this), 'sub'
-                )
         ])->with('newer');
     }
 
@@ -142,6 +144,7 @@ trait HasRevisions
         if ($value !== null || array_key_exists('initial_id', $this->attributes)) {
             return $value;
         }
+        // when value isn't set by extra subselect scope, fetch from relation
         return $this->revision->original_revisionable_id ?? null;
     }
 
@@ -156,6 +159,7 @@ trait HasRevisions
         if ($value !== null || array_key_exists('previous_id', $this->attributes)) {
             return $value;
         }
+        // when value isn't set by extra subselect scope, fetch from relation
         return $this->revision->previous->revisionable_id ?? null;
     }
 
@@ -170,6 +174,7 @@ trait HasRevisions
         if ($value !== null || array_key_exists('next_id', $this->attributes)) {
             return $value;
         }
+        // when value isn't set by extra subselect scope, fetch from relation
         return $this->revision->next->revisionable_id ?? null;
     }
 
@@ -277,7 +282,6 @@ trait HasRevisions
      * Update or Create the revision for this model.
      *
      * @param  array  $values
-     *
      * @return bool|\Illuminate\Database\Eloquent\Model
      */
     public function startRevision($values = [])

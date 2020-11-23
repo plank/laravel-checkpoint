@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
  * @method static Builder|Revision newQuery()
  * @method static Builder|Revision query()
  * @method static Builder|Revision whereId($value)
+ * @method static Builder|Revision whereType($value)
  * @method static Builder|Revision whereRevisionableId($value)
  * @method static Builder|Revision whereRevisionableType($value)
  * @method static Builder|Revision whereOriginalRevisionableId($value)
@@ -166,7 +167,7 @@ class Revision extends MorphPivot
      */
     public function previous(): BelongsTo
     {
-        return $this->belongsTo(static::class, 'previous_revision_id', $this->primaryKey);
+        return $this->belongsTo(static::class, 'previous_revision_id', $this->getKeyName());
     }
 
     /**
@@ -176,7 +177,7 @@ class Revision extends MorphPivot
      */
     public function next(): HasOne
     {
-        return $this->hasOne(static::class, 'previous_revision_id', $this->primaryKey);
+        return $this->hasOne(static::class, 'previous_revision_id', $this->getKeyName());
     }
 
     /**
@@ -255,7 +256,7 @@ class Revision extends MorphPivot
      */
     public function scopeLatestIds(Builder $q, $until = null, $since = null)
     {
-        $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()}) as closest")
+        $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()})")
             ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderByDesc('previous_revision_id');
 
         $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);

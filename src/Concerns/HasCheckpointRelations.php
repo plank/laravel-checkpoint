@@ -82,7 +82,7 @@ trait HasCheckpointRelations
      */
     public function initial(): HasOne
     {
-        return $this->hasOne(static::class, 'id', 'initial_id')->withoutRevisions();
+        return $this->hasOne(static::class, $this->getKeyName(), 'initial_id')->withoutRevisions();
     }
 
     /**
@@ -92,7 +92,7 @@ trait HasCheckpointRelations
      */
     public function older(): HasOne
     {
-        return $this->hasOne(static::class, 'id', 'previous_id')->withoutRevisions();
+        return $this->hasOne(static::class, $this->getKeyName(), 'previous_id')->withoutRevisions();
     }
 
     /**
