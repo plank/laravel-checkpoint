@@ -21,8 +21,8 @@ class RevisionScopesTest extends TestCase
     /** @test */
     public function revision_global_scope_can_be_disabled()
     {
-        $this->assertNotContains(RevisionScope::class, array_keys(Post::removedScopes()));
-        $this->assertContains(RevisionScope::class, array_keys(Post::withoutRevisions()->removedScopes()));
+        $this->assertNotContains(RevisionScope::class, Post::removedScopes());
+        $this->assertContains(RevisionScope::class, Post::withoutRevisions()->removedScopes());
     }
 
     /**

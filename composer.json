@@ -30,8 +30,9 @@
         "illuminate/support": "5.8.*|^6.0|^7.0|^8.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.0",
-        "phpunit/phpunit": "^8.0"
+        "orchestra/testbench": "^4.8 || ^5.2",
+        "phpunit/phpunit": "^9.0",
+        "vimeo/psalm": "^3.11"
     },
     "autoload": {
         "psr-4": {
@@ -44,9 +45,9 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/phpunit",
+        "psalm": "vendor/bin/psalm",
+        "test": "vendor/bin/phpunit --colors=always",
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
-
     },
     "config": {
         "sort-packages": true
@@ -57,5 +58,7 @@
                 "Plank\\Checkpoint\\CheckpointServiceProvider"
             ]
         }
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

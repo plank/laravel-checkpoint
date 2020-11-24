@@ -1,8 +1,7 @@
 # Laravel Checkpoint 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
-[![Build Status](https://img.shields.io/travis/plank/laravel-checkpoint/master.svg?style=flat-square)](https://travis-ci.org/plank/versionable)
-[![Quality Score](https://img.shields.io/scrutinizer/g/plank/laravel-checkpoint.svg?style=flat-square)](https://scrutinizer-ci.com/g/plank/versionable)
+[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/plank/laravel-checkpoint/tests?label=tests)](https://github.com/plank/laravel-checkpoint/actions?query=workflow%3Atests+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
 
 ## Table of Contents
@@ -27,10 +26,10 @@
     - [Should Revision](#should-revision)
     - [Excluded Columns](#excluded-columns)
     - [Excluded Relations](#excluded-relations)
-    - [Testing](#testing)
-    - [Changelog](#changelog)
+  - [Testing](#testing)
+  - [Changelog](#changelog)
   - [Contributing](#contributing)
-    - [Security](#security)
+  - [Security](#security)
   - [Credits](#credits)
   - [License](#license)
 
@@ -185,21 +184,21 @@ cases you can add the names of the relations to the``` protected $excludedRelati
 revisioning. Excluding all relations to the ```Checkpoint```s and other related ```Revision```s are handled by the 
 package.  
 
-### Testing
+## Testing
 
 ``` bash
 composer test
 ```
 
-### Changelog
+## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
 
-### Security
+## Security
 
 If you discover any security related issues, please email massimo@plankdesign.com instead of using the issue tracker.
 
