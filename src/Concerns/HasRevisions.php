@@ -33,8 +33,10 @@ trait HasRevisions
     public static function bootHasRevisions(): void
     {
         static::addGlobalScope(new RevisionScope);
-        // hook onto all relevant events: On Create, Update, Delete, Restore : make new revisions...
-        static::observe(RevisionableObserver::class);
+        if (config('checkpoint.enabled')) {
+            // hook onto all relevant events: On Create, Update, Delete, Restore : make new revisions...
+            static::observe(RevisionableObserver::class);
+        }
     }
 
     /**

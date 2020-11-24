@@ -29,7 +29,9 @@ class RevisionScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->at(); // show the latest available revisions by default
+        if (config('checkpoint.apply_global_scope', true)) {
+            $builder->at(); // show the latest available revisions by default
+        }
     }
 
     /**

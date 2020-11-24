@@ -19,8 +19,8 @@ trait HasCheckpointRelations
      */
     public function checkpoint(): HasOneThrough
     {
-        $revision = config('checkpoint.revision_model');
-        $checkpoint = config('checkpoint.checkpoint_model');
+        $revision = config('checkpoint.models.revision');
+        $checkpoint = config('checkpoint.models.checkpoint');
         return $this->hasOneThrough(
             $checkpoint,
             $revision,
@@ -37,8 +37,8 @@ trait HasCheckpointRelations
      */
     public function checkpoints(): HasManyThrough
     {
-        $revision = config('checkpoint.revision_model');
-        $checkpoint = config('checkpoint.checkpoint_model');
+        $revision = config('checkpoint.models.revision');
+        $checkpoint = config('checkpoint.models.checkpoint');
         return $this->hasManyThrough(
             $checkpoint,
             $revision,
@@ -56,7 +56,7 @@ trait HasCheckpointRelations
      */
     public function revision(): MorphOne
     {
-        return $this->morphOne(config('checkpoint.revision_model'), 'revisionable');
+        return $this->morphOne(config('checkpoint.models.revision'), 'revisionable');
     }
 
     /**
@@ -67,7 +67,7 @@ trait HasCheckpointRelations
     public function revisions()
     {
         return $this->morphMany(
-            config('checkpoint.revision_model'),
+            config('checkpoint.models.revision'),
             'revisionable',
             'revisionable_type',
             'original_revisionable_id',

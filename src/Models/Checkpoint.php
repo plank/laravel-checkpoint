@@ -148,7 +148,7 @@ class Checkpoint extends Model
      */
     public function revisions(): HasMany
     {
-        $model = config('checkpoint.revision_model', Revision::class);
+        $model = config('checkpoint.models.revision');
         return $this->hasMany($model, $model::CHECKPOINT_ID);
     }
 
@@ -161,10 +161,9 @@ class Checkpoint extends Model
      */
     public function modelsOf(string $type): MorphToMany
     {
-        $rev = config('checkpoint.revision_model', Revision::class);
         return $this->morphedByMany($type, 'revisionable', 'revisions', 'checkpoint_id')
             ->withPivot('metadata', 'previous_revision_id', 'original_revisionable_id')->withTimestamps()
-            ->using($rev);
+            ->using(config('checkpoint.models.revision'));
     }
 
     /**

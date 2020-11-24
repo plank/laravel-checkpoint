@@ -156,8 +156,7 @@ class Revision extends MorphPivot
      */
     public function checkpoint(): BelongsTo
     {
-        $model = config('checkpoint.checkpoint_model', Checkpoint::class);
-        return $this->belongsTo($model, $this->getCheckpointIdColumn());
+        return $this->belongsTo(config('checkpoint.models.checkpoint'), $this->getCheckpointIdColumn());
     }
 
     /**
@@ -259,18 +258,19 @@ class Revision extends MorphPivot
         $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()})")
             ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderByDesc('previous_revision_id');
 
-        $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
+        $checkpoint = config('checkpoint.models.checkpoint');
+        $checkpoint_key = Checkpoint::getModel()->getKeyName();
 
         if ($until instanceof $checkpoint) {
             // where in given checkpoint or one of the previous ones
-            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::olderThanEquals($until)->select('id'));
+            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::olderThanEquals($until)->select($checkpoint_key));
         } elseif ($until !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '<=', $until);
         }
 
         if ($since instanceof $checkpoint) {
             // where in one of the newer checkpoints than given
-            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::newerThan($since)->select('id'));
+            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::newerThan($since)->select($checkpoint_key));
         } elseif ($since !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '>', $since);
         }

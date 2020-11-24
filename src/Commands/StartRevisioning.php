@@ -45,7 +45,7 @@ class StartRevisioning extends Command
     {
         $checkpoint = null;
         if ($this->option('with-checkpoint')) {
-            $checkpointClass = config('checkpoint.checkpoint_model');
+            $checkpointClass = config('checkpoint.models.checkpoint');
             $checkpoint = $checkpointClass::first() ?? new $checkpointClass();
             $checkpoint->save();
             $checkpoint->refresh();
