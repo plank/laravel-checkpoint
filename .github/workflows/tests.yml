@@ -8,10 +8,10 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         php: [7.4]
         laravel: [6.*, 7.*]
-        stability: [prefer-lowest, prefer-stable]
+        stability: [prefer-stable]
         include:
           - laravel: 7.*
             testbench: 5.*
@@ -35,6 +35,12 @@ jobs:
         run: |
           echo "::add-matcher::${{ runner.tool_cache }}/php.json"
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.composer/cache/files
+          key: dependencies-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-stability-${{ matrix.stability }}-composer-${{ hashFiles('composer.json') }}
 
       - name: Install dependencies
         run: |
