@@ -1,8 +1,7 @@
 # Laravel Checkpoint 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
-[![Build Status](https://img.shields.io/travis/plank/laravel-checkpoint/master.svg?style=flat-square)](https://travis-ci.org/plank/versionable)
-[![Quality Score](https://img.shields.io/scrutinizer/g/plank/laravel-checkpoint.svg?style=flat-square)](https://scrutinizer-ci.com/g/plank/versionable)
+[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/plank/laravel-checkpoint/tests?label=tests)](https://github.com/plank/laravel-checkpoint/actions?query=workflow%3Atests+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/versionable)
 
 ## Table of Contents
@@ -27,10 +26,10 @@
     - [Should Revision](#should-revision)
     - [Excluded Columns](#excluded-columns)
     - [Excluded Relations](#excluded-relations)
-    - [Testing](#testing)
-    - [Changelog](#changelog)
+  - [Testing](#testing)
+  - [Changelog](#changelog)
   - [Contributing](#contributing)
-    - [Security](#security)
+  - [Security](#security)
   - [Credits](#credits)
   - [License](#license)
 
@@ -113,8 +112,7 @@ This query scope will limit the query to return the *Model* whose ```Revision```
 the ```Revision``` was created at or before the given moment. 
 
 The moment can either be an instance of a ```Checkpoint``` 
-using its ```checkpoint_date``` field, or a string representation of a date compatible with ```Carbon::parse```, or a 
-```Carbon``` instance.
+using its ```checkpoint_date``` field, a string representation of a date or a ```Carbon``` instance.
 
 #### since($moment)
 ```php
@@ -126,8 +124,8 @@ since($moment = null)
 This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key, where
 the ```Revision``` was created after the given moment. 
 
-The moment can either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, or a string
-representation of a date compatible with ```Carbon::parse```, or a ```Carbon``` instance.
+The moment can either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, a string
+representation of a date or a ```Carbon``` instance.
 
 #### temporal($upper, $lower)
 ```php
@@ -135,15 +133,15 @@ representation of a date compatible with ```Carbon::parse```, or a ```Carbon``` 
  * @param $upper Checkpoint|Carbon|string
  * @param $upper Checkpoint|Carbon|string
  */
-temporal($upper = null, $lower = null)
+temporal($until = null, $since = null)
 ```
 This query scope will limit the query to return the *Model* whose ```Revision``` has the max primary key created at 
-or before ```$upper```. This method can also limit the query to the *Model* whose revision has the max primary key
-created after ```$lower```. 
+or before ```$until```. This method can also limit the query to the *Model* whose revision has the max primary key
+created after ```$since```. 
 
-Each argument operates independently of each other and ```$upper``` and ```$lower``` can 
-either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, or a string representation of a date
-compatible with ```Carbon::parse```, or a ```Carbon``` instance.
+Each argument operates independently of each other and ```$until``` and ```$since``` can 
+either be an instance of a ```Checkpoint``` using its ```checkpoint_date``` field, a string representation of a 
+date or a ```Carbon``` instance.
 
 #### withoutRevisions()
 ```php
@@ -186,21 +184,21 @@ cases you can add the names of the relations to the``` protected $excludedRelati
 revisioning. Excluding all relations to the ```Checkpoint```s and other related ```Revision```s are handled by the 
 package.  
 
-### Testing
+## Testing
 
 ``` bash
 composer test
 ```
 
-### Changelog
+## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
 
-### Security
+## Security
 
 If you discover any security related issues, please email massimo@plankdesign.com instead of using the issue tracker.
 

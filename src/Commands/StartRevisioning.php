@@ -45,7 +45,7 @@ class StartRevisioning extends Command
     {
         $checkpoint = null;
         if ($this->option('with-checkpoint')) {
-            $checkpointClass = config('checkpoint.checkpoint_model');
+            $checkpointClass = config('checkpoint.models.checkpoint');
             $checkpoint = $checkpointClass::first() ?? new $checkpointClass();
             $checkpoint->save();
             $checkpoint->refresh();
@@ -67,10 +67,8 @@ class StartRevisioning extends Command
         foreach ($models as $class) {
             $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
                foreach ($results as $item) {
-                   $item->updateOrCreateRevision();
+                   $item->startRevision();
                    $revision = $item->revision;
-                   // TODO: shouldn't be required for global query anymore.
-                   $revision->created_at = $item->freshRevisionCreatedAt();
                    $revision->checkpoint()->associate($checkpoint);
                    $revision->save();
                }

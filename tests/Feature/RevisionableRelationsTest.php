@@ -9,7 +9,6 @@ use Plank\Checkpoint\Tests\TestCase;
 
 class RevisionableRelationsTest extends TestCase
 {
-
     /**
      * @test
      */
@@ -26,11 +25,21 @@ class RevisionableRelationsTest extends TestCase
     /**
      * @test
      */
+    public function all_revisionables_have_revision(): void
+    {
+        $posts = factory(Post::class, 5)->create();
+
+        $this->assertCount($posts->count(), $posts->filter(function ($post) { return $post->revision()->exists(); }));
+    }
+
+    /**
+     * @test
+     */
     public function retrieve_initial_revisionable_from_any_revision(): void
     {
         $post = factory(Post::class)->create();
         $revision1 = $post->revision;
-        $post->saveAsRevision();
+        $post->performRevision();
         $revision2 = $post->revision;
 
         $this->assertNotEquals($revision1->id, $revision2->id);
@@ -45,11 +54,37 @@ class RevisionableRelationsTest extends TestCase
     {
         $post = factory(Post::class)->create();
         $revision1 = $post->revision;
-        $post->saveAsRevision();
+        $original_id = $post->id;
+
+        $post->performRevision();
         $revision2 = $post->revision;
+
+        $this->assertTrue($post->older()->exists());
+        $this->assertEquals($original_id, Post::withPrevious()->find($post->id)->older->id);
 
         $this->assertEquals($post->id, $revision2->revisionable_id);
         $this->assertEquals($post->older->id, $revision1->revisionable_id);
+    }
+
+    /**
+     * @test
+     */
+    public function retrieve_next_revisionable_if_available(): void
+    {
+        $post = factory(Post::class)->create();
+        $revision1 = $post->revision;
+        $original = clone $post;
+
+        $this->assertFalse($original->newer()->exists());
+        $this->assertFalse($post->newer()->exists());
+
+        $post->performRevision();
+        $revision2 = $post->revision;
+
+        $this->assertEquals($post->id, Post::withoutRevisions()->withNext()->find($original->id)->newer->id);
+
+        $this->assertEquals($original->id, $revision1->revisionable_id);
+        $this->assertEquals($post->id, $revision2->revisionable_id);
     }
 
     /**
@@ -59,7 +94,7 @@ class RevisionableRelationsTest extends TestCase
     {
         $post = factory(Post::class)->create();
         $revision1 = $post->revision;
-        $post->saveAsRevision();
+        $post->performRevision();
         $revision2 = $post->revision;
 
         $this->assertEquals(2, $post->revisions()->count());
@@ -75,7 +110,7 @@ class RevisionableRelationsTest extends TestCase
         $checkpoint = factory(Checkpoint::class)->create();
         $post = factory(Post::class)->create();
         $revision1 = $post->revision;
-        $post->saveAsRevision();
+        $post->performRevision();
         $revision2 = $post->revision;
         $original_post = $post->initial;
 
@@ -98,7 +133,7 @@ class RevisionableRelationsTest extends TestCase
         $revision1->save();
 
         $c2 = factory(Checkpoint::class)->create();
-        $post->saveAsRevision();
+        $post->performRevision();
         $original_post = $post->initial;
         $revision2 = $post->revision;
         $revision2->checkpoint_id = $c2->id;

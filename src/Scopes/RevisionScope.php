@@ -5,8 +5,6 @@ namespace Plank\Checkpoint\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
-use Plank\Checkpoint\Models\Checkpoint;
-use Plank\Checkpoint\Models\Revision;
 
 class RevisionScope implements Scope
 {
@@ -31,7 +29,9 @@ class RevisionScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->at();
+        if (config('checkpoint.apply_global_scope', true)) {
+            $builder->at(); // show the latest available revisions by default
+        }
     }
 
     /**
@@ -49,38 +49,32 @@ class RevisionScope implements Scope
 
 
     /**
-     * Allows to scope the query using dates or
+     * Add the temporal extension to the builder
+     *
+     * worst case execution plan : #reads = all rows in your table * all checkpoints * all revisions
+     * avg case execution plan: all rows in your table * 1 revision * 1 revision * 0..max amount of checkpoints
+     *
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @return void
      */
     protected function addTemporal(Builder $builder)
     {
-        $builder->macro('temporal', function (Builder $builder, $upper = null, $lower = null) {
+        // Constrain the scope to a specific window of time using valid checkpoints, carbon objects or datetime strings
+        $builder->macro('temporal', function (Builder $builder, $until = null, $since = null) {
             $model = $builder->getModel();
-            $revision = config('checkpoint.revision_model', Revision::class);
 
             $builder->withoutGlobalScope($this);
-            // worst case execution plan : #reads = all rows in your table * all checkpoints * all revisions
-            // the timestamps subquery is the most expensive, reading all revisions from disk, try to build an index to fit it.
+            // METHOD 1: Join current table on revisions, join the result on closest subquery
 
-            //TODO: watch out for hardcoded columns names and relation names
+            // METHOD 2 : Join current table on revisions, filter out by original and type index, use a where in for the closest ids subquery
 
-            // METHOD 1: Join current table on revisions, join the result on timestamps subquery
-            /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                 ->joinSub(
-                    $revision::latestIds($upper, $lower), 
-                    'temporal', 'temporal.closest', '=', 
-                    (new $revision)->getQualifiedKeyName()
-                 )->where('revisionable_type', '=', get_class($model));*/
-
-            // METHOD 2 : Join current table on revisions, filter out by revisionable_type, use a whereIn subquery for timestamps
-            /* $builder->join('revisions', $model->getQualifiedKeyName(), '=', 'revisionable_id')
-                ->whereIn((new $revision)->getQualifiedKeyName(), $revision::latestIds($upper, $lower))
-                ->where('revisionable_type', '=', get_class($model));*/
-            
-            // METHOD 3 : Uses a where exists wrapper, laravel handles the revisionable id/type, use a whereIn subquery for timestamps
-            $builder->whereHas('revision', function (Builder $query) use ($revision, $upper, $lower) {
-               $query->whereIn((new $revision)->getQualifiedKeyName(), $revision::latestIds($upper, $lower));
+            // METHOD 3 : Uses a where exists wrapper on a where in subquery for closest ids
+            $builder->whereHas('revision', function (Builder $query) use ($model, $until, $since) {
+                $query->whereIn($query->getModel()->getQualifiedKeyName(),
+                    $query->newModelInstance()->setTable('_r')->from($query->getModel()->getTable(), '_r')
+                        ->latestIds($until, $since)
+                        ->whereColumn($query->qualifyColumn('original_revisionable_id'), '_r.original_revisionable_id')
+                        ->whereType($model));
             });
 
             return $builder;
@@ -88,6 +82,7 @@ class RevisionScope implements Scope
     }
 
     /**
+     * Add the at extension to the builder.
      *
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @return void
@@ -100,6 +95,7 @@ class RevisionScope implements Scope
     }
 
     /**
+     * Add the since extension to the builder.
      *
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @return void
@@ -113,6 +109,7 @@ class RevisionScope implements Scope
 
     /**
      * Shortcut to clearing scope from query
+     *
      * @param \Illuminate\Database\Eloquent\Builder $builder
      * @return void
      */

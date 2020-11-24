@@ -1,12 +1,36 @@
 <?php
+
 namespace Plank\Checkpoint\Models;
 
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Collection;
 
+/**
+ * @property int $id
+ * @property string $title
+ * @property string $checkpoint_date
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|\App\Revision[] $revisions
+ * @property-read int|null $revisions_count
+ * @method static Builder|Checkpoint newModelQuery()
+ * @method static Builder|Checkpoint newQuery()
+ * @method static Builder|Checkpoint query()
+ * @method static Builder|Checkpoint whereId($value)
+ * @method static Builder|Checkpoint whereTitle($value)
+ * @method static Builder|Checkpoint whereCheckpointDate($value)
+ * @method static Builder|Checkpoint whereCreatedAt($value)
+ * @method static Builder|Checkpoint whereUpdatedAt($value)
+ * @method static Builder|Checkpoint closestTo($moment, $operator = '<=')
+ * @method static Builder|Checkpoint newerThan($moment, $strict = true)
+ * @method static Builder|Checkpoint olderThan($moment, $strict = true)
+ * @method static Builder|Checkpoint newerThanEquals($moment)
+ * @method static Builder|Checkpoint olderThanEquals($moment)
+ * @mixin \Eloquent
+ */
 class Checkpoint extends Model
 {
 
@@ -32,7 +56,7 @@ class Checkpoint extends Model
     protected $keyType = 'int';
 
     /**
-     * Prevent Eloquent from overriding uuid with `lastInsertId`.
+     * Indicates if the IDs are auto-incrementing.
      *
      * @var bool
      */
@@ -61,11 +85,18 @@ class Checkpoint extends Model
     protected $guarded = ['id'];
 
     /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array
+     */
+    protected $dates = [self::CHECKPOINT_DATE];
+
+    /**
      * Get the name of the "checkpoint date" column.
      *
      * @return string
      */
-    public function getCheckpointDateColumn()
+    public function getCheckpointDateColumn(): string
     {
         return static::CHECKPOINT_DATE;
     }
@@ -73,7 +104,7 @@ class Checkpoint extends Model
     /**
      * Get the "checkpoint date" field.
      *
-     * @return string
+     * @return \Illuminate\Support\Carbon|string
      */
     public function getCheckpointDate()
     {
@@ -81,53 +112,33 @@ class Checkpoint extends Model
     }
 
     /**
-     * Apply a scope to filter for checkpoints older than the one provided ordered by checkpoint date desc
+     * Return current checkpoint at this moment in time
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  Checkpoint  $checkpoint
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @return Checkpoint|Model|null
      */
-    public function scopeOlderThan(Builder $query, Checkpoint $checkpoint)
-    {
-        $column = $checkpoint->getCheckpointDateColumn();
-        return $query->where($column, '<', $checkpoint->getCheckpointDate())->latest($column);
-    }
-
-    /**
-     * Apply a scope to filter for checkpoints newer than the one provided ordered by checkpoint date asc
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @param  Checkpoint  $checkpoint
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function scopeNewerThan(Builder $query, Checkpoint $checkpoint)
-    {
-        $column = $checkpoint->getCheckpointDateColumn();
-        return $query->where($column, '>', $checkpoint->getCheckpointDate())->oldest($column);
+    public static function current() {
+        return static::olderThan(now())->first();
     }
 
     /**
      * Return the checkpoint right before this one
-     * note: calculated via checkpoint date, ids are sequential
-     *       but then you would locked in to auto increments
+     * note: calculated via checkpoint date, ids are sequential but then you would be locked in to use auto-increments
      *
-     * @return Checkpoint|Model|object|null
+     * @return Checkpoint|Model|null
      */
     public function previous()
     {
-        return self::olderThan($this)->first();
+        return static::olderThan($this)->first();
     }
 
     /**
      * Return the checkpoint right after this one
      *
-     * @return Checkpoint|Model|object|null
+     * @return Checkpoint|Model|null
      */
     public function next()
     {
-        return self::newerThan($this)->first();
+        return static::newerThan($this)->first();
     }
 
     /**
@@ -137,7 +148,7 @@ class Checkpoint extends Model
      */
     public function revisions(): HasMany
     {
-        $model = config('checkpoint.revision_model', Revision::class);
+        $model = config('checkpoint.models.revision');
         return $this->hasMany($model, $model::CHECKPOINT_ID);
     }
 
@@ -145,25 +156,99 @@ class Checkpoint extends Model
      * Retrieve all models of a specific type directly associated with this checkpoint
      * more efficient than models since it performs only a single query
      *
-     * @param string $type class name of the models you want to fetch
+     * @param  string  $type  class name of the models you want to fetch
      * @return MorphToMany
      */
-    public function modelsOf($type): MorphToMany
+    public function modelsOf(string $type): MorphToMany
     {
-        $rev = config('checkpoint.revision_model', Revision::class);
         return $this->morphedByMany($type, 'revisionable', 'revisions', 'checkpoint_id')
             ->withPivot('metadata', 'previous_revision_id', 'original_revisionable_id')->withTimestamps()
-            ->using($rev);
+            ->using(config('checkpoint.models.revision'));
     }
 
     /**
      * Retrieve all models directly associated with this checkpoint
-     * More expensive than just calling
+     * More expensive than just calling modelsOf() with specific class / type
      *
      * @return Collection
      */
     public function models(): Collection
     {
         return $this->revisions()->with('revisionable')->get()->pluck('revisionable');
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints closest to the one provided based on an operator
+     * when less than, orders by checkpoint_date desc
+     * when greater than, orders checkpoint_date asc
+     *
+     * @param  Builder  $query
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string  $moment
+     * @param  string  $operator
+     * @return Builder
+     */
+    public function scopeClosestTo(Builder $query, $moment, $operator = '<=')
+    {
+        $column = $this->getCheckpointDateColumn();
+        if ($moment instanceof static) {
+            $moment = $moment->getCheckpointDate();
+        }
+        $query->where($column, $operator, $moment);
+        if ($operator === '<' || $operator === '<=') {
+            $query->latest($column);
+        } elseif ($operator === '>' || $operator === '>=') {
+            $query->oldest($column);
+        }
+        return $query;
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints older than the one provided ordered by checkpoint date desc
+     *
+     * @param  Builder  $query
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string  $moment
+     * @param  bool  $strict
+     * @return Builder
+     */
+    public function scopeOlderThan(Builder $query, $moment, $strict = true)
+    {
+        return $query->closestTo($moment, $strict ? '<' : '<=');
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints older or equal to the one provided ordered by checkpoint date desc
+     *
+     * @param  Builder  $query
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string  $moment
+     * @return Builder
+     */
+    public function scopeOlderThanEquals(Builder $query, $moment)
+    {
+        return $query->olderThan($moment, false);
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints newer than the one provided ordered by checkpoint date asc
+     *
+     * @param  Builder  $query
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string  $moment
+     * @param  bool  $strict
+     * @return Builder
+     */
+    public function scopeNewerThan(Builder $query, $moment, $strict = true)
+    {
+        return $query->closestTo($moment, $strict ? '>' : '>=');
+    }
+
+    /**
+     * Apply a scope to filter for checkpoints newer or equal to the one provided ordered by checkpoint date asc
+     *
+     * @param  Builder  $query
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string  $moment
+     * @return Builder
+     */
+    public function scopeNewerThanEquals(Builder $query, $moment)
+    {
+        return $query->newerThan($moment, false);
     }
 }

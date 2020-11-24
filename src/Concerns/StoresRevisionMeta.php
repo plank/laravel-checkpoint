@@ -2,12 +2,9 @@
 
 namespace Plank\Checkpoint\Concerns;
 
-use Plank\Checkpoint\Observers\RevisionableObserver;
-use Plank\Checkpoint\Scopes\RevisionScope;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Trait StoresMeta
- *
  * Allows saving specific columns onto the revision metadata field and ensures the
  * model can retrieve those columns from meta if they don't exist in the main table.
  * Mainly used for columns that cannot contain duplicate entries (ex: ordering)
@@ -27,14 +24,31 @@ trait StoresRevisionMeta
     }
 
     /**
+     * Get the id of the previous revisioned item
+     *
+     * @param  Builder  $builder
+     * @return mixed
+     */
+    public function scopeWithMetadata(Builder $builder)
+    {
+        $revision = config('checkpoint.models.revision');
+        return $builder->addSelect([
+            'metadata' => $revision::select('revisionable_id')
+                ->where('revisionable_id', $this->getKey())
+                ->whereType($this)
+        ]);
+    }
+
+    /**
      * @return array
      */
-    public function getMetadataAttribute()
+    public function getMetadataAttribute($value)
     {
-        if ($this->revision !== null) {
-            return json_decode($this->revision->metadata, true);
+        if ($value !== null || array_key_exists('metadata', $this->attributes)) {
+            return $value;
         }
-        return [];
+        // when value isn't set by extra subselect scope, fetch from relation
+        return $this->revision->metadata ?? null;
     }
 
     /**
@@ -55,14 +69,14 @@ trait StoresRevisionMeta
     {
         $metaColumns = $this->getRevisionMeta();
         //if (!empty($metaColumns)) {
-            $meta = collect();
+            $meta = [];
             foreach ($metaColumns as $attribute) {
                 $meta[$attribute] = $this->$attribute;
                 // TODO: check column is nullable or put empty string
                 $this->$attribute = null;
             }
             $revision = $revision ?? $this->revision;
-            $revision->metadata = $meta->toJson();
+            $revision->metadata = $meta;
             $this->withoutEvents(function () use ($revision) {
                 $revision->save();
                 $this->save(); // modified attributes, make sure this is saved without events
@@ -71,8 +85,8 @@ trait StoresRevisionMeta
     }
 
     /**
-     * Get a plain attribute (not a relationship). **Override of base eloquent model**
-     * This allows a user to access an attribute that is stored in the meta data instead of the model.
+     * Get a plain attribute (not a relationship).
+     * Overrides default eloquent method by adding support for pulling data from revision metadata.
      *
      * @param  string  $key
      * @return mixed
@@ -85,6 +99,24 @@ trait StoresRevisionMeta
         }
 
         return $value;
+    }
 
+    /**
+     * Convert the model's attributes to an array.
+     *
+     * @return array
+     */
+    public function attributesToArray()
+    {
+        $attributes = parent::attributesToArray();
+
+        // go over columns stored in the revision metadata and add them to the returned array
+        if ($this->revision()->exists()) {
+            foreach ($this->getRevisionMeta() as $key) {
+                $attributes[$key] = $this->metadata[$key] ?? null;
+            }
+        }
+
+        return $attributes;
     }
 }

@@ -49,20 +49,6 @@ class RelationHelper
     ];
 
     /**
-     * All available Laravel's direct relations.
-     *
-     * @var array
-     */
-    protected static $directRelations = [
-        HasOne::class,
-        MorphOne::class,
-        HasMany::class,
-        MorphMany::class,
-        BelongsTo::class,
-        MorphTo::class,
-    ];
-
-    /**
      * All available Laravel's pivoted relations.
      *
      * @var array
@@ -81,19 +67,6 @@ class RelationHelper
         BelongsTo::class,
         MorphTo::class,
     ];
-
-    /**
-     * All available Laravel's direct child relations.
-     *
-     * @var array
-     */
-    protected static $childRelations = [
-        HasOne::class,
-        MorphOne::class,
-        HasMany::class,
-        MorphMany::class,
-    ];
-
     /**
      * All available Laravel's direct single child relations.
      *
@@ -122,7 +95,7 @@ class RelationHelper
      */
     public static function isDirect(string $relation): bool
     {
-        return in_array($relation, static::$directRelations);
+        return self::isChild($relation) || self::isParent($relation);
     }
 
     /**
@@ -155,7 +128,7 @@ class RelationHelper
      */
     public static function isChild(string $relation): bool
     {
-        return in_array($relation, static::$childRelations);
+        return self::isChildSingle($relation) || self::isChildMultiple($relation);
     }
 
     /**

@@ -4,11 +4,26 @@ namespace Plank\Checkpoint\Tests\Feature;
 
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
+use Plank\Checkpoint\Scopes\RevisionScope;
 use Plank\Checkpoint\Tests\Support\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class RevisionScopesTest extends TestCase
 {
+
+    /** @test */
+    public function revision_global_scope_is_applied()
+    {
+        $post = new Post();
+        $this->assertContains(RevisionScope::class, array_keys($post->getGlobalScopes()));
+    }
+
+    /** @test */
+    public function revision_global_scope_can_be_disabled()
+    {
+        $this->assertNotContains(RevisionScope::class, Post::removedScopes());
+        $this->assertContains(RevisionScope::class, Post::withoutRevisions()->removedScopes());
+    }
 
     /**
      * @test
@@ -35,6 +50,22 @@ class RevisionScopesTest extends TestCase
 
         $this->assertEquals(1, Post::since($now)->count());
         $this->assertEquals(0, Post::since($after)->count());
+    }
+
+    /**
+     * @test
+     */
+    public function lookup_visible_posts_between_two_dates(): void
+    {
+        $before = now()->startOfMinute();
+        $post = factory(Post::class)->create();
+        $after = now()->endOfMinute();
+
+        $this->assertEquals(1, Post::since($before)->count());
+        $this->assertEquals(1, Post::at($after)->count());
+        $this->assertEquals(1, Post::temporal($after, $before)->count());
+        $this->assertEquals(0, Post::since($after)->count());
+        $this->assertEquals(0, Post::at($before)->count());
     }
 
     /**
@@ -72,5 +103,20 @@ class RevisionScopesTest extends TestCase
 
         $this->assertEquals(1, Post::since($before)->count());
         $this->assertEquals(0, Post::since($after)->count());
+    }
+
+    /**
+     * @test
+     */
+    public function lookup_visible_posts_between_two_checkpoints(): void
+    {
+        $before = factory(Checkpoint::class)->create(['checkpoint_date' => now()->startOfDay()]);
+        $post = factory(Post::class)->create();
+        $after = factory(Checkpoint::class)->create(['checkpoint_date' => now()->endOfMinute()]);
+
+        $post->revision->checkpoint_id = $after->id;
+        $post->push();
+
+        $this->assertEquals(1, Post::temporal($after, $before)->count());
     }
 }

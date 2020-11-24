@@ -1,15 +1,50 @@
 <?php
+
 namespace Plank\Checkpoint\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\MorphPivot;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphPivot;
 
+/**
+ * @property int $id
+ * @property string $revisionable_type
+ * @property int $revisionable_id
+ * @property int $original_revisionable_id
+ * @property int|null $previous_revision_id
+ * @property int|null $checkpoint_id
+ * @property mixed|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $revisionable
+ * @property-read \Illuminate\Database\Eloquent\Model|\Eloquent $initialRevisionable
+ * @property-read \Illuminate\Database\Eloquent\Collection|Revision[] $allRevisions
+ * @property-read int|null $all_revisions_count
+ * @property-read \Illuminate\Database\Eloquent\Collection|Revision[] $otherRevisions
+ * @property-read int|null $other_revisions_count
+ * @property-read Revision|null $next
+ * @property-read Revision|null $previous
+ * @property-read Checkpoint|null $checkpoint
+ * @method static Builder|Revision newModelQuery()
+ * @method static Builder|Revision newQuery()
+ * @method static Builder|Revision query()
+ * @method static Builder|Revision whereId($value)
+ * @method static Builder|Revision whereType($value)
+ * @method static Builder|Revision whereRevisionableId($value)
+ * @method static Builder|Revision whereRevisionableType($value)
+ * @method static Builder|Revision whereOriginalRevisionableId($value)
+ * @method static Builder|Revision wherePreviousRevisionId($value)
+ * @method static Builder|Revision whereCheckpointId($value)
+ * @method static Builder|Revision whereMetadata($value)
+ * @method static Builder|Revision whereCreatedAt($value)
+ * @method static Builder|Revision whereUpdatedAt($value)
+ * @method static Builder|Revision latestIds($until = null, $since = null)
+ * @mixin \Eloquent
+ */
 class Revision extends MorphPivot
 {
     /**
@@ -34,7 +69,7 @@ class Revision extends MorphPivot
     protected $keyType = 'int';
 
     /**
-     * Prevent Eloquent from overriding uuid with `lastInsertId`.
+     * Indicates if the IDs are auto-incrementing.
      *
      * @var bool
      */
@@ -69,6 +104,15 @@ class Revision extends MorphPivot
     protected $guarded = [
         'id',
         'metadata'
+    ];
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'metadata' => 'array'
     ];
 
     /**
@@ -112,8 +156,7 @@ class Revision extends MorphPivot
      */
     public function checkpoint(): BelongsTo
     {
-        $model = config('checkpoint.checkpoint_model', Checkpoint::class);
-        return $this->belongsTo($model, $this->getCheckpointIdColumn());
+        return $this->belongsTo(config('checkpoint.models.checkpoint'), $this->getCheckpointIdColumn());
     }
 
     /**
@@ -123,7 +166,7 @@ class Revision extends MorphPivot
      */
     public function previous(): BelongsTo
     {
-        return $this->belongsTo(get_class($this), 'previous_revision_id', $this->primaryKey);
+        return $this->belongsTo(static::class, 'previous_revision_id', $this->getKeyName());
     }
 
     /**
@@ -133,7 +176,7 @@ class Revision extends MorphPivot
      */
     public function next(): HasOne
     {
-        return $this->hasOne(get_class($this), 'previous_revision_id', $this->primaryKey);
+        return $this->hasOne(static::class, 'previous_revision_id', $this->getKeyName());
     }
 
     /**
@@ -188,55 +231,65 @@ class Revision extends MorphPivot
      */
     public function allRevisions(): HasMany
     {
-        return $this->hasMany(get_class($this), 'revisionable_type', 'revisionable_type')
+        return $this->hasMany(static::class, 'revisionable_type', 'revisionable_type')
             ->where('original_revisionable_id', $this->original_revisionable_id);
     }
 
     /**
-     * Return all the revisions sibling that share the same item
+     * Return all the revisions sibling that share the same item except the current one
      *
-     * @return
+     * @return HasMany
      */
     public function otherRevisions(): HasMany
     {
-        return $this->allRevisions()->where('id', '!=', $this->id);
+        return $this->allRevisions()->where('id', '!=', $this->getKey());
     }
 
     /**
+     * Retrieve the latest revision ids within the boundary window given valid checkpoints, carbon or datetime strings
+     *
      * @param  Builder  $q
-     * @param  Checkpoint|Carbon|string|null  $until
-     * @param  Checkpoint|Carbon|string|null  $since
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string|null  $until  valid checkpoint, carbon or datetime string
+     * @param  Checkpoint|\Illuminate\Support\Carbon|string|null  $since  valid checkpoint, carbon or datetime string
      * @return Builder
      */
     public function scopeLatestIds(Builder $q, $until = null, $since = null)
     {
-        $q->withoutGlobalScopes()->selectRaw("max({$this->getQualifiedKeyName()}) as closest")
-            ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderBy(DB::raw('NULL'));
+        $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()})")
+            ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderByDesc('previous_revision_id');
 
-
-        $checkpoint = config('checkpoint.checkpoint_model', Checkpoint::class);
-        $checkpointDateColumn = $checkpoint::CHECKPOINT_DATE;
+        $checkpoint = config('checkpoint.models.checkpoint');
+        $checkpoint_key = Checkpoint::getModel()->getKeyName();
 
         if ($until instanceof $checkpoint) {
-            // where in this checkpoint or one of the previous ones
-            $q->whereIn(
-                $this->getCheckpointIdColumn(),
-                $checkpoint::select('id')->where($checkpointDateColumn, '<=', $until->$checkpointDateColumn)
-            );
+            // where in given checkpoint or one of the previous ones
+            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::olderThanEquals($until)->select($checkpoint_key));
         } elseif ($until !== null) {
-            $q->where($this->getQualifiedCreatedAtColumn(), '<=', Carbon::parse($until));
+            $q->where($this->getQualifiedCreatedAtColumn(), '<=', $until);
         }
 
         if ($since instanceof $checkpoint) {
-            // where in this checkpoint or one of the following ones
-            $q->whereIn(
-                $this->getCheckpointIdColumn(),
-                $checkpoint::select('id')->where($checkpointDateColumn, '>', $since->$checkpointDateColumn)
-            );
+            // where in one of the newer checkpoints than given
+            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::newerThan($since)->select($checkpoint_key));
         } elseif ($since !== null) {
-            $q->where($this->getQualifiedCreatedAtColumn(), '>', Carbon::parse($since));
+            $q->where($this->getQualifiedCreatedAtColumn(), '>', $since);
         }
 
+        return $q;
+    }
+
+    /**
+     * @param  Builder  $q
+     * @param  Model|string|null  $type
+     * @return Builder
+     */
+    public function scopeWhereType(Builder $q, $type = null)
+    {
+        if (is_string($type)) {
+            $q->where('revisionable_type', $type);
+        } elseif ($type instanceof Model) {
+            $q->where('revisionable_type', get_class($type));
+        }
         return $q;
     }
 }
