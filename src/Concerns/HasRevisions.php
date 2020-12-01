@@ -46,7 +46,7 @@ trait HasRevisions
      */
     public function initializeHasRevisions(): void
     {
-        $this->addObservableEvents('revisioning', 'revisioned');
+        //
     }
 
     /**
@@ -69,6 +69,17 @@ trait HasRevisions
     public static function revisioned($callback): void
     {
         static::registerModelEvent('revisioned', $callback);
+    }
+
+
+    /**
+     * Get the observable event names.
+     *
+     * @return array
+     */
+    public function getObservableEvents()
+    {
+        return array_merge(['revisioning', 'revisioned'], parent::getObservableEvents());
     }
 
     /**
