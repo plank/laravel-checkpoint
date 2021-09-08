@@ -45,6 +45,16 @@ return [
          */
         'checkpoint' => Plank\Checkpoint\Models\Checkpoint::class,
 
+        /*
+         * When using the "HasRevisions" trait from this package, we need to know which model
+         * should be used to retrieve your timelines. To extend or replace this functionality,
+         * change the value below with your full "timeline model" class name.
+         */
+        'timeline' => Plank\Checkpoint\Models\Timeline::class,
     ],
 
+    /**
+     * The class responsible for storing and retrieving the active bulletin for each request
+     */
+    'store' => Plank\Checkpoint\Stores\BasicCheckpointStore::class
 ];

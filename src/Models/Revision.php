@@ -97,6 +97,13 @@ class Revision extends MorphPivot
     const CHECKPOINT_ID = 'checkpoint_id';
 
     /**
+     * The name of the "timeline id" column.
+     *
+     * @var string
+     */
+    const TIMELINE_ID = 'timeline_id';
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array
@@ -183,7 +190,10 @@ class Revision extends MorphPivot
      */
     public function checkpoint(): BelongsTo
     {
-        return $this->belongsTo(config('checkpoint.models.checkpoint'), $this->getCheckpointIdColumn());
+        /** @var string $checkpointClass */
+        $checkpointClass = config('checkpoint.models.checkpoint');
+
+        return $this->belongsTo($checkpointClass, $this->getCheckpointIdColumn());
     }
 
     /**
@@ -199,7 +209,7 @@ class Revision extends MorphPivot
     /**
      * Return the revision that follows this one
      *
-     * @return BelongsTo
+     * @return HasOne
      */
     public function next(): HasOne
     {
@@ -286,22 +296,20 @@ class Revision extends MorphPivot
         $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()})")
             ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderByDesc('previous_revision_id');
 
-        /**
-         * @var Checkpoint
-         */
-        $checkpoint = config('checkpoint.models.checkpoint');
-        $checkpoint_key = $checkpoint::getModel()->getKeyName();
+        /** @var Checkpoint $checkpointClass */
+        $checkpointClass = config('checkpoint.models.checkpoint');
+        $keyname = $checkpointClass::getModel()->getKeyName();
 
-        if ($until instanceof $checkpoint) {
+        if ($until instanceof $checkpointClass) {
             // where in given checkpoint or one of the previous ones
-            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::olderThanEquals($until)->select($checkpoint_key));
+            $q->whereIn($this->getCheckpointIdColumn(), $checkpointClass::olderThanEquals($until)->select($keyname));
         } elseif ($until !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '<=', $until);
         }
 
-        if ($since instanceof $checkpoint) {
+        if ($since instanceof $checkpointClass) {
             // where in one of the newer checkpoints than given
-            $q->whereIn($this->getCheckpointIdColumn(), $checkpoint::newerThan($since)->select($checkpoint_key));
+            $q->whereIn($this->getCheckpointIdColumn(), $checkpointClass::newerThan($since)->select($keyname));
         } elseif ($since !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '>', $since);
         }

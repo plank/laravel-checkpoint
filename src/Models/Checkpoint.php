@@ -5,13 +5,17 @@ namespace Plank\Checkpoint\Models;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Plank\Checkpoint\Contracts\CheckpointStore;
+use Plank\Checkpoint\Observers\CheckpointObserver;
 
 /**
  * @property int $id
  * @property string $title
  * @property string $checkpoint_date
+ * @property-read null|Timeline $timeline
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection|\App\Revision[] $revisions
@@ -62,6 +66,12 @@ class Checkpoint extends Model
      */
     public $incrementing = true;
 
+    /**
+     * Set the checkpoint that is active while creating content
+     *
+     * @var self
+     */
+    public static self $active;
 
     /**
      * The name of the "updated at" column.
@@ -78,6 +88,13 @@ class Checkpoint extends Model
     const CHECKPOINT_DATE = 'checkpoint_date';
 
     /**
+     * The name of the "timeline id" column.
+     *
+     * @var string
+     */
+    const TIMELINE_ID = 'timeline_id';
+
+    /**
      * The attributes that aren't mass assignable.
      *
      * @var array
@@ -90,6 +107,86 @@ class Checkpoint extends Model
      * @var array
      */
     protected $dates = [self::CHECKPOINT_DATE];
+
+    /**
+     * The class responsible for storing and retrieving the active checkpoint for each request
+     *
+     * @var null|CheckpointStore
+     */
+    protected static ?CheckpointStore $store = null;
+
+    /**
+     * The "booting" method of the model.
+     *
+     * @return void
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::observe(CheckpointObserver::class);
+    }
+
+    /**
+     * Get the store responsible for storing and retrieving the active checkpoint for each request
+     *
+     * @return CheckpointStore
+     */
+    public static function getStore(): CheckpointStore
+    {
+        if (static::$store === null) {
+            /** @var CheckpointStore $storeClass */
+            $storeClass = config('checkpoint.store');
+
+            /** @var CheckpointStore $store */
+            $store = new $storeClass;
+
+            static::$store = $store;
+        }
+
+        return static::$store;
+    } 
+
+    /**
+     * Set the active checkpoint we are viewing/updating
+     *
+     * @param Checkpoint $checkpoint 
+     * @return void 
+     */
+    public static function setActive(self $checkpoint): void
+    {
+        static::getStore()->store($checkpoint);
+    }
+
+    /**
+     * Set the active checkpoint we are viewing/updating
+     *
+     * @return void 
+     */
+    public static function clearActive(): void
+    {
+        static::getStore()->clear();
+    }
+
+    /**
+     * Get the active checkpoint we are working on
+     *
+     * @return null|Checkpoint
+     */
+    public static function active(): ?Checkpoint
+    {
+        return static::getStore()->retrieve();
+    }
+
+    /**
+     * Get the timeline the checkpoint belongs to
+     *
+     * @return BelongsTo 
+     */
+    public function timeline(): BelongsTo
+    {
+        return $this->belongsTo(Timeline::class, static::TIMELINE_ID);
+    }
 
     /**
      * Get the name of the "checkpoint date" column.
@@ -148,8 +245,10 @@ class Checkpoint extends Model
      */
     public function revisions(): HasMany
     {
-        $model = config('checkpoint.models.revision');
-        return $this->hasMany($model, $model::CHECKPOINT_ID);
+        /** @var Revision|string $revisionClass */ 
+        $revisionClass = config('checkpoint.models.revision');
+
+        return $this->hasMany($revisionClass, $revisionClass::CHECKPOINT_ID);
     }
 
     /**
@@ -161,9 +260,12 @@ class Checkpoint extends Model
      */
     public function modelsOf(string $type): MorphToMany
     {
+        /** @var string $revisionClass */
+        $revisionClass = config('checkpoint.models.revision');
+
         return $this->morphedByMany($type, 'revisionable', 'revisions', 'checkpoint_id')
             ->withPivot('metadata', 'previous_revision_id', 'original_revisionable_id')->withTimestamps()
-            ->using(config('checkpoint.models.revision'));
+            ->using($revisionClass);
     }
 
     /**

@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
+use Plank\Checkpoint\Models\Checkpoint;
+use Plank\Checkpoint\Models\Revision;
+use Plank\Checkpoint\Models\Timeline;
 
 /**
  * @mixin HasRevisions
@@ -19,8 +22,12 @@ trait HasCheckpointRelations
      */
     public function checkpoint(): HasOneThrough
     {
+        /** @var Revision $revision */
         $revision = config('checkpoint.models.revision');
+
+        /** @var Checkpoint $checkpoint */
         $checkpoint = config('checkpoint.models.checkpoint');
+
         return $this->hasOneThrough(
             $checkpoint,
             $revision,
@@ -28,6 +35,28 @@ trait HasCheckpointRelations
             $checkpoint::getModel()->getKeyName(),
             $this->getKeyName(),
             $revision::CHECKPOINT_ID
+        )->where('revisionable_type', static::class);
+    }
+
+    /**
+     * Return the checkpoint this model belongs to
+     * @return HasOneThrough
+     */
+    public function timeline(): HasOneThrough
+    {
+        /** @var Revision $revision */
+        $revision = config('checkpoint.models.revision');
+
+        /** @var Timeline $timeline */
+        $timeline = config('checkpoint.models.timeline');
+
+        return $this->hasOneThrough(
+            $timeline,
+            $revision,
+            'revisionable_id',
+            $timeline::getModel()->getKeyName(),
+            $this->getKeyName(),
+            $revision::TIMELINE_ID
         )->where('revisionable_type', static::class);
     }
 

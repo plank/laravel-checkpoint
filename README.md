@@ -10,6 +10,7 @@
   - [Why Use This Package](#why-use-this-package)
   - [Installation](#installation)
   - [Concepts](#concepts)
+    - [Timelines](#timelines)
     - [Checkpoints](#checkpoints)
     - [Revisions](#revisions)
   - [Usage](#usage)
@@ -17,6 +18,7 @@
       - [What gets Revisioned?](#what-gets-revisioned)
       - [Start Revisioning Command](#start-revisioning-command)
     - [Query Scopes](#query-scopes)
+      - [Active Checkpoint](#active-checkpoint)
       - [at($moment)](#atmoment)
       - [since($moment)](#sincemoment)
       - [temporal($upper, $lower)](#temporalupper-lower)
@@ -45,19 +47,34 @@ composer require plank/laravel-checkpoint
 ```
 
 ## Concepts
+### Timelines
+A ```Timeline``` is a way to have completely separate views of your content. A ```Timeline``` allows you to filter the ```Revision```s of your models based on the ```Timeline``` it belongs to.
+
+Table: ```timelines```
+
+| Field             | Type                | Required  |  Default        |
+|-------------------|---------------------|:---------:|-----------------|
+| id                | bigIncrements       | ✗         | Increment       |
+| timeline_id       | unsignedBigInteger  | ✗         |                 |
+| title             | string              | ✓         |                 | 
+| checkpoint_date   | timestamp           | ✓         |                 |
+| created_at        | timestamp           | ✗         |                 |
+| updated_at        | timestamp           | ✗         |                 |
+
 ### Checkpoints
 A ```Checkpoint``` is a point in time which is of interest. A ```Checkpoint``` allows you to filter the ```Revision```s 
 of your models based on the ```Checkpoint```'s ```checkpoint_date```.
 
 Table: ```checkpoints```
 
-| Field             | Type           | Required  |  Default        |
-|-------------------|----------------|:---------:|-----------------|
-| id                | bigIncrements  | ✗         | Increment       |
-| title             | string         | ✓         |                 | 
-| checkpoint_date   | timestamp      | ✓         |                 |
-| created_at        | timestamp      | ✗         |                 |
-| updated_at        | timestamp      | ✗         |                 |
+| Field             | Type                | Required  |  Default        |
+|-------------------|---------------------|:---------:|-----------------|
+| id                | bigIncrements       | ✗         | Increment       |
+| timeline_id       | unsignedBigInteger  | ✗         |                 |
+| title             | string              | ✓         |                 | 
+| checkpoint_date   | timestamp           | ✓         |                 |
+| created_at        | timestamp           | ✗         |                 |
+| updated_at        | timestamp           | ✗         |                 |
 
 ### Revisions
 A ```Revision``` references a record of a ```Model``` in a particular state at a particular point in time. When this 
@@ -98,6 +115,10 @@ command will begin revisioning all of the *Models* which are using the ```HasRev
 
 ### Query Scopes
 The way this package achieves it's goal is by adding scopes (and one global scope) to query models that have revisions. 
+
+#### Active Checkpoint
+By setting the active checkpoint ```Checkpoint::setActive($checkpoint)```, all queries for revisioned models will be
+scoped to that ```$checkpoint```. Also, when there is an active checkpoint set, any new revisions that get created will be associated with that ```$checkpoint```.
 
 #### at($moment)
 ```php

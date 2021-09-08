@@ -3,6 +3,7 @@
 namespace Plank\Checkpoint\Observers;
 
 use Illuminate\Database\Eloquent\Model;
+use Plank\Checkpoint\Concerns\HasRevisions;
 
 class RevisionableObserver
 {
@@ -10,10 +11,10 @@ class RevisionableObserver
      * Handle the parent model "replicating" event.
      * Followed by saving, creating, created, saved events
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function replicating($model) {
+    public function replicating(Model $model) {
         //
     }
 
@@ -21,10 +22,10 @@ class RevisionableObserver
      * Handle the parent model "restoring" event.
      * Followed by saving & updating events
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void|bool
      */
-    public function restoring($model)
+    public function restoring(Model $model)
     {
         $model->clearExcluded();
     }
@@ -33,10 +34,10 @@ class RevisionableObserver
      * Handle the parent model "restored" event.
      * Preceded by updated & saved events
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function restored($model)
+    public function restored(Model $model)
     {
         //
     }
@@ -45,7 +46,7 @@ class RevisionableObserver
      * Handle the parent model "saving" event.
      * Happens before either a creating or updating event
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
     public function saving(Model $model) {
@@ -56,20 +57,20 @@ class RevisionableObserver
      * Handle the parent model "saved" event.
      * Happens after either a created or updated event
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function saved($model) {
+    public function saved(Model $model) {
         //
     }
 
     /**
      * Handle the parent model "creating" event.
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function creating($model)
+    public function creating(Model $model)
     {
         //
     }
@@ -77,10 +78,10 @@ class RevisionableObserver
     /**
      * Handle the parent model "created" event.
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function created($model)
+    public function created(Model $model)
     {
         $model->startRevision();
     }
@@ -88,10 +89,10 @@ class RevisionableObserver
     /**
      * Handle the parent model "updating" event.
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function updating($model)
+    public function updating(Model $model)
     {
         // Check if any column is dirty and filter out the unwatched fields
         if(!empty(array_diff(array_keys($model->getDirty()), $model->getIgnored()))) {
@@ -102,10 +103,10 @@ class RevisionableObserver
     /**
      * Handle the parent model "updated" event.
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function updated($model)
+    public function updated(Model $model)
     {
         //
     }
@@ -113,10 +114,10 @@ class RevisionableObserver
     /**
      * Handle the parent model "deleting" event.
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function deleting($model)
+    public function deleting(Model $model)
     {
         if (method_exists($model, 'bootSoftDeletes') && !$model->isForceDeleting()) {
             $model->clearExcluded();
@@ -129,10 +130,10 @@ class RevisionableObserver
     /**
      * Handle the parent model "deleted" event.
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void
      */
-    public function deleted($model)
+    public function deleted(Model $model)
     {
         $revision = $model->revision;
         // skip cascading revision delete if we're soft deleting or the revision is missing
@@ -150,10 +151,10 @@ class RevisionableObserver
      * Handle the parent model "forceDeleted" event.
      * Only fired if the model is using SoftDeletes
      *
-     * @param  $model
+     * @param Model|HasRevisions $model
      * @return void|bool
      */
-    public function forceDeleted($model)
+    public function forceDeleted(Model $model)
     {
         //
     }
