@@ -5,6 +5,7 @@ namespace Plank\Checkpoint\Tests;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Plank\Checkpoint\CheckpointServiceProvider;
+use Plank\Checkpoint\Models\Checkpoint;
 
 abstract class TestCase extends Orchestra
 {
@@ -75,5 +76,21 @@ abstract class TestCase extends Orchestra
 
         include_once __DIR__.'/../database/migrations/2016_06_01_000001_create_revisions_table.php';
         (new \CreateRevisionsTable())->up();
+
+        include_once __DIR__.'/../database/migrations/2021_09_07_000001_create_timelines_table.php';
+        (new \CreateTimelinesTable())->up();
+
+        include_once __DIR__.'/../database/migrations/2021_09_07_000002_add_timelines_to_checkpoints.php';
+        (new \AddTimelinesToCheckpoints())->up();
+
+        include_once __DIR__.'/../database/migrations/2021_09_07_000003_add_timelines_to_revisions.php';
+        (new \AddTimelinesToRevisions())->up();
+    }
+
+    public function tearDown(): void
+    {
+        Checkpoint::clearActive();
+
+        parent::tearDown();
     }
 }

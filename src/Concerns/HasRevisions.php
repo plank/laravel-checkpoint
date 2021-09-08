@@ -10,9 +10,12 @@ use Plank\Checkpoint\Models\Checkpoint;
 use Illuminate\Database\Eloquent\Builder;
 use Plank\Checkpoint\Scopes\RevisionScope;
 use Plank\Checkpoint\Helpers\RelationHelper;
+use Plank\Checkpoint\Models\Timeline;
 use Plank\Checkpoint\Observers\RevisionableObserver;
 
 /**
+ * @property-read null|Checkpoint $checkpoint
+ * @property-read null|Timeline $timeline
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at($until)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since($since)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal($until, $since)
@@ -292,7 +295,12 @@ trait HasRevisions
             return false;
         }
 
+        $checkpoint = Checkpoint::active();
+        $timeline = $checkpoint ? $checkpoint->timeline : null;
+
         return $this->revision()->create(array_merge([
+            Revision::CHECKPOINT_ID => $checkpoint ? $checkpoint->getKey() : null,
+            Revision::TIMELINE_ID => $timeline ? $timeline->getKey() : null,
             'revisionable_id' => $this->id,
             'revisionable_type' => static::class,
             'original_revisionable_id' => $this->id,
