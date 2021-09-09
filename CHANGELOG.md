@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-checkpoint` will be documented in this file
 
+## 2.0.0 - 2021-11-09
+- Adding the ability to have multiple timelines
+- Adding the ability to set an Active Checkpoint
+
 ## 1.1.0 - 2021-10-29
 
 - $unwatched replaced with $ignored / $excluded
