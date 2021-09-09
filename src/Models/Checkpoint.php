@@ -185,7 +185,10 @@ class Checkpoint extends Model
      */
     public function timeline(): BelongsTo
     {
-        return $this->belongsTo(Timeline::class, static::TIMELINE_ID);
+        /** @var string $timelineModel */
+        $timelineModel = config('checkpoint.models.timeline');
+
+        return $this->belongsTo($timelineModel, static::TIMELINE_ID);
     }
 
     /**
