@@ -9,6 +9,13 @@ use Plank\Checkpoint\Tests\TestCase;
 class RevisionMetadataTest extends TestCase
 {
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Config::set('checkpoint.store_unique_columns_on_revision', true);
+    }
+
     /**
      * the current revision doesn't need to keep unique columns in metadata,
      * these can stay in the original table
