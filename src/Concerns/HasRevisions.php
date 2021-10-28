@@ -8,6 +8,7 @@ use ReflectionClass;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Models\Checkpoint;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Plank\Checkpoint\Scopes\RevisionScope;
 use Plank\Checkpoint\Helpers\RelationHelper;
 use Plank\Checkpoint\Observers\RevisionableObserver;
@@ -16,6 +17,10 @@ use Plank\Checkpoint\Observers\RevisionableObserver;
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at($until)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since($since)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal($until, $since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withLatestAt($until, $since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withInitial()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withPrevious()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNext()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
  *
  * @mixin \Eloquent
@@ -24,6 +29,8 @@ trait HasRevisions
 {
     use HasCheckpointRelations;
     use StoresRevisionMeta;
+    use IgnoresAttributes;
+    use ExcludesAttributes;
 
     /**
      * Boot has revisions trait for a model.
@@ -266,38 +273,6 @@ trait HasRevisions
     }
 
     /**
-     * Return the columns to ignore when creating a copy of a model.
-     * Gets passed to replicate() in saveAsRevision().
-     *
-     * @return array
-     */
-    public function getExcludedColumns(): array
-    {
-        return $this->getRevisionUnwatched();
-    }
-
-    /**
-     * Set a protected unwatched array on your model to skip revisioning on specific columns
-     *
-     * @return array
-     */
-    public function getRevisionUnwatched(): array
-    {
-        return $this->unwatched ?? [];
-    }
-
-    /**
-     * Modify the contents of the unwatched property.
-     * Useful for adjusting what columns should be default when creating a new revision on a child relationship.
-     *
-     * @param  null  $unwatched
-     */
-    public function setRevisionUnwatched($unwatched = null): void
-    {
-        $this->unwatched = $unwatched ?? $this->getRevisionUnwatched();
-    }
-
-    /**
      * Get an array of the relationships to be ignored during duplication
      *
      * @return array
@@ -358,13 +333,15 @@ trait HasRevisions
             $this->startRevision();
 
             // Replicate the current object
-            $copy = $this->withoutRelations()->replicate($this->getExcludedColumns());
+            $copy = $this->withoutRelations()->replicate($this->getExcluded());
             $copy->save();
             $copy->refresh();
 
             // Reattach relations to the copied object
             $this->revisionRelations($copy);
 
+            // Retrieve dirty columns on the current model instance before resetting it
+            $dirty = array_diff(array_keys($this->getDirty()), $this->getExcluded());
             // Reset the current model instance to original data
             $this->setRawAttributes($this->original);
 

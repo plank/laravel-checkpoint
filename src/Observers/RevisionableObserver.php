@@ -60,7 +60,7 @@ class RevisionableObserver
     public function updating($model)
     {
         // Check if any column is dirty and filter out the unwatched fields
-        if(!empty(array_diff(array_keys($model->getDirty()), $model->getRevisionUnwatched()))) {
+        if(!empty(array_diff(array_keys($model->getDirty()), $model->getIgnored()))) {
             $model->performRevision();
         }
     }
