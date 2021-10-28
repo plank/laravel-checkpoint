@@ -115,6 +115,22 @@ class Revision extends MorphPivot
         'metadata' => 'array'
     ];
 
+    protected static function booted()
+    {
+        static::deleting(function (self $revision) {
+            $next = $revision->next;
+            // if newer revision exists, point its previous_revision_id to the previous revision of this item
+            if ($next !== null) {
+                $next->previous_revision_id = $revision->previous_revision_id;
+                $next->save();
+            } elseif ($revision->previous_revision_id !== null) {
+                // if no newer revision exists, update the latest flag on the previous revision
+                $revision->previous()->update(['latest' => true]);
+            }
+
+        });
+    }
+
     /**
      * Get the name of the "checkpoint id" column.
      *

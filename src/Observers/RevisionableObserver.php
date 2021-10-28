@@ -99,14 +99,11 @@ class RevisionableObserver
      */
     public function deleted($model)
     {
-        if (!method_exists($model, 'bootSoftDeletes') || $model->isForceDeleting()) {
-            $revision = $model->revision;
-            // if newer revision exists, point its previous_revision_id to the previous revision of this item
-            if ($revision !== null && $revision->next()->exists()) {
-                $revision->next->previous_revision_id = $revision->previous_revision_id;
-                $revision->next->save();
-            }
-            $model->revision()->delete();
+        $revision = $model->revision;
+        // skip cascading revision delete if we're soft deleting or the revision is missing
+        if ($revision === null || (method_exists($model, 'bootSoftDeletes') && !$model->isForceDeleting())) {
+            $model->syncChangedAttributes([$model->getDeletedAtColumn()]);
+            return;
         }
 
         // cascade delete to revision
