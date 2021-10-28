@@ -64,6 +64,8 @@ class RevisionObservablesTest extends TestCase
         $changed = collect($post->getAttributes());
         $this->assertNotEquals($post->deleted_at, $original->get('deleted_at'));
         $this->assertEmpty($original->diffAssoc($changed)->except('id', ...$post->getDates()));
+        // checking that changed columns are listed corrected
+        $this->assertEquals(['id', 'deleted_at'], array_keys($post->getChanges()));
     }
 
     /**
