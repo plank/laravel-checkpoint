@@ -136,6 +136,33 @@ trait HasRevisions
     }
 
     /**
+     * Get the id of the initial revisioned item
+     *
+     * @return mixed
+     */
+    public function scopeWithNewestAt($builder, $until = null, $since = null)
+    {
+        $revision = config('checkpoint.models.revision');
+        return $builder->withInitial()->addSelect([
+            'newest_id' => $revision::select('revisionable_id')
+                ->whereIn('id', $revision::latestIds($until, $since)
+                    ->whereColumn('original_revisionable_id', 'initial_id')
+                    ->where('revisionable_type', get_class($this))
+                )
+        ])->with('newest');
+    }
+
+    /**
+     * add a sub-select column linking this model to its most recent revision
+     *
+     * @return mixed
+     */
+    public function scopeWithNewest($builder)
+    {
+        return $builder->withNewestAt();
+    }
+
+    /**
      * Get the id of the initial revisionable
      *
      * @param  $value
@@ -178,6 +205,20 @@ trait HasRevisions
         }
         // when value isn't set by extra subselect scope, fetch from relation
         return $this->revision->next->revisionable_id ?? null;
+    }
+
+    /**
+     * Get the newest revision in the lineage
+     *
+     * @return static
+     */
+    public function getNewestIdAttribute($value)
+    {
+        if ($value !== null || array_key_exists('newest_id', $this->attributes)) {
+            return $value;
+        }
+        // dependency on latest boolean column, alternative to using max id
+        return $this->revisions()->where('latest', true)->first()->revisionable_id;
     }
 
 
@@ -281,7 +322,7 @@ trait HasRevisions
     }
 
     /**
-     * Update or Create the revision for this model.
+     * Create the revision for this model.
      *
      * @param  array  $values
      * @return bool|\Illuminate\Database\Eloquent\Model

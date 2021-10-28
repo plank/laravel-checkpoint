@@ -102,7 +102,17 @@ trait HasCheckpointRelations
      */
     public function newer(): HasOne
     {
-        return $this->hasOne(static::class, 'id', 'next_id')->withoutRevisions();
+        return $this->hasOne(static::class, $this->getKeyName(), 'next_id')->withoutRevisions();
+    }
+
+    /**
+     * Get the model at its recent revision
+     *
+     * @return HasOne
+     */
+    public function newest(): HasOne
+    {
+        return $this->hasOne(static::class, $this->getKeyName(), 'newest_id')->withoutRevisions();
     }
 
 }
