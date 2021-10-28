@@ -81,7 +81,14 @@ trait StoresRevisionMeta
                 $revision->save();
                 $this->save(); // modified attributes, make sure this is saved without events
             });
-        //}
+            // Reset original unique columns of the model back to what they were
+            foreach ($uniqueColumns as $attribute) {
+                $this->original[$attribute] = $unique[$attribute];
+                $this->$attribute = $unique[$attribute];
+            }
+            // Clear out listed changes, aka the unique columns set to null
+            $this->syncChanges();
+        }
     }
 
     /**

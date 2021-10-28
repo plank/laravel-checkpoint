@@ -43,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
  * @method static Builder|Revision whereCreatedAt($value)
  * @method static Builder|Revision whereUpdatedAt($value)
  * @method static Builder|Revision latestIds($until = null, $since = null)
- * @mixin \Eloquent
+ * @mixin Model
  */
 class Revision extends MorphPivot
 {
@@ -150,6 +150,16 @@ class Revision extends MorphPivot
     }
 
     /**
+     * Retrieve the original model in this sequence
+     *
+     * @return MorphTo
+     */
+    public function originalRevisionable(): MorphTo
+    {
+        return $this->initialRevisionable();
+    }
+
+    /**
      * Return the associated checkpoint/release to this revision
      *
      * @return BelongsTo
@@ -194,7 +204,8 @@ class Revision extends MorphPivot
      *
      * @return bool
      */
-    public function isNew() {
+    public function isNew()
+    {
         return $this->previous_revision_id === null;
     }
 
@@ -242,7 +253,7 @@ class Revision extends MorphPivot
      */
     public function otherRevisions(): HasMany
     {
-        return $this->allRevisions()->where('id', '!=', $this->getKey());
+        return $this->allRevisions()->whereKeyNot($this->getKey());
     }
 
     /**
@@ -258,8 +269,11 @@ class Revision extends MorphPivot
         $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()})")
             ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderByDesc('previous_revision_id');
 
+        /**
+         * @var Checkpoint
+         */
         $checkpoint = config('checkpoint.models.checkpoint');
-        $checkpoint_key = Checkpoint::getModel()->getKeyName();
+        $checkpoint_key = $checkpoint::getModel()->getKeyName();
 
         if ($until instanceof $checkpoint) {
             // where in given checkpoint or one of the previous ones

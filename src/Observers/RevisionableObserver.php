@@ -9,7 +9,7 @@ class RevisionableObserver
 
     /**
      * Handle the parent model "saving" event.
-     * Happens on both creating & updating
+     * Happens before either a creating or updating event
      *
      * @param  $model
      * @return void
@@ -20,7 +20,7 @@ class RevisionableObserver
 
     /**
      * Handle the parent model "saved" event.
-     * Happens on both created & updated
+     * Happens after either a created or updated event
      *
      * @param  $model
      * @return void
@@ -86,6 +86,8 @@ class RevisionableObserver
     {
         if (method_exists($model, 'bootSoftDeletes') && !$model->isForceDeleting()) {
             $model->performRevision();
+            $model->syncChanges(); // copy over dirty values to changes, mimics natural laravel update
+            $model->syncOriginal(); // clears dirty without triggering a db update, values are already up-to-date
         }
     }
 
@@ -106,15 +108,20 @@ class RevisionableObserver
             }
             $model->revision()->delete();
         }
+
+        // cascade delete to revision
+        $revision->delete();
+        $model->unsetRelation('revision');
     }
-    
+
     /**
-     * Handle the parent model "restoring" event.
+     * Handle the parent model "forceDeleted" event.
+     * Only fired if the model is using SoftDeletes
      *
      * @param  $model
      * @return void|bool
      */
-    public function restoring($model)
+    public function forceDeleted($model)
     {
         //
     }

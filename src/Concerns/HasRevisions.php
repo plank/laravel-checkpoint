@@ -316,7 +316,7 @@ trait HasRevisions
      *
      * @return bool
      */
-    public function shouldRevision(): bool
+    protected function shouldRevision(): bool
     {
         return true;
     }
@@ -341,7 +341,7 @@ trait HasRevisions
     }
 
     /**
-     * Each link to a release contains metadata that can be used to build a previous version of given model
+     * Perform a revision on this model that will attempt to duplicate itself & all of its relations.
      *
      * @return bool
      * @throws \Throwable
@@ -363,34 +363,10 @@ trait HasRevisions
             $copy->refresh();
 
             // Reattach relations to the copied object
-            $excludedRelations = $this->getExcludedRelations();
-            foreach (RelationHelper::getModelRelations($this) as $relation => $attributes) {
-                if (!in_array($relation, $excludedRelations, true)) {
-                    if (RelationHelper::isChild($attributes['type'])) {
-                        logger(self::class . " {$this->getKey()}: duplicating children via $relation ({$attributes['type']})");
-                        foreach ($this->$relation()->get() as $child) {
-                            if (method_exists($child, 'bootHasRevisions')) {
-                                // Revision the child model by attaching it to our new copy
-                                $child->setRawAttributes(array_merge($child->getOriginal(), [
-                                    $this->$relation()->getForeignKeyName() => $copy->getKey()
-                                ]));
-                                $child->setRevisionUnwatched();
-                                $child->save();
-                            } else {
-                                $copy->$relation()->save($child->replicate());
-                            }
-                        }
-                    } elseif (RelationHelper::isPivoted($attributes['type'])) {
-                        logger(self::class . " {$this->getKey()}: duplicating pivots via $relation ({$attributes['type']})");
-                        $copy->$relation()->syncWithoutDetaching($this->$relation()->get());
-                    } else {
-                        logger(self::class . " {$this->getKey()}: skipping duplication of $relation ({$attributes['type']})");
-                    }
-                }
-            }
+            $this->revisionRelations($copy);
 
             // Reset the current model instance to original data
-            $this->setRawAttributes($this->getOriginal());
+            $this->setRawAttributes($this->original);
 
             //  Handle unique columns by storing them as meta on the revision itself
             $this->moveMetaToRevision();
@@ -404,15 +380,74 @@ trait HasRevisions
                 'previous_revision_id' => $this->revision->id,
             ]);
 
-            // Point $this to the duplicate, unload its relations and refresh the object
+            // Return dirty values back onto $this model instance
             $this->setRawAttributes($copy->getAttributes());
+            // force using new revision key for any future queries
+            unset($this->original[$this->getKeyName()]);
+            // unset any loaded relations, their data is no longer valid
             $this->unsetRelations();
-            $this->refresh();
         });
 
         $this->fireModelEvent('revisioned', false);
 
         return true;
+    }
+
+    /**
+     * Iterate over all possible relations on this model and decide how to duplicate the link represented by them.
+     * By default, only children and pivots are replicated.
+     *
+     * Custom handlers for relations and relation types can be registered as a function on your model or in a trait,
+     * like you would with model scopes. syntax: revision<Relation>() or revision<RelationType>()
+     *
+     * @param Model $copy
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    private function revisionRelations(Model $copy)
+    {
+        $relationHelper = resolve(RelationHelper::class);
+
+        $excluded = $this->getExcludedRelations();
+        $relations = collect($relationHelper::getModelRelations($this))->map->type->except($excluded);
+
+        foreach ($relations as $relation => $type) {
+            if (method_exists($this, 'revision' . ucfirst($relation))) {
+                $this->{'revision' . ucfirst($relation)}($copy, $relation, $type); // revisionModules()
+            } elseif (method_exists($this, 'revision' . substr($type, strrpos($type, '\\') + 1))) {
+                $this->{'revision' . ucfirst($type)}($copy, $relation, $type); // revisionHasMany()
+            } elseif ($relationHelper::isChild($type)) {
+                $this->revisionChildren($copy, $relation);
+            } elseif ($relationHelper::isPivoted($type)) { // default is pivot
+                $changes = $copy->$relation()->syncWithoutDetaching($this->$relation()->get());
+            } else {
+                // skipped relation
+            }
+        }
+    }
+
+    /**
+     * Replicate the children available through a given relationship.
+     * Revisionable models will be modified and prompted to create a new revision, other will simply be replicated.
+     *
+     *
+     * @param Model $copy
+     * @param string $relation
+     */
+    protected function revisionChildren($copy, $relation)
+    {
+        foreach ($this->$relation()->get() as $child) {
+            /**
+             * @var Model|HasRevisions $child
+             */
+            if (method_exists($child, 'bootHasRevisions')) {
+                // Revision the child model by attaching it to our new copy
+                $child->setAttribute($this->$relation()->getForeignKeyName(), $copy->getKey());
+                $child->save();
+            } else {
+                $copy->$relation()->save($child->replicate());
+            }
+        }
     }
 
     /**
@@ -441,5 +476,26 @@ trait HasRevisions
     public function deleteAllRevisions(): void
     {
 
+    }
+
+    /**
+     * Sync the changed attributes.
+     *
+     * @param  array|string|null
+     * @return $this
+     */
+    public function syncChangedAttributes($changes = null): self
+    {
+        if (empty($changes)) {
+            return $this->syncChanges();
+        }
+
+        $changes = is_array($changes) ? $changes : func_get_args();
+
+        foreach ($changes as $key) {
+            $this->changes[$key] = $this->attributes[$key];
+        }
+
+        return $this;
     }
 }
