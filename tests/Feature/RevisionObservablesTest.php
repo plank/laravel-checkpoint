@@ -3,7 +3,7 @@
 namespace Plank\Checkpoint\Tests\Feature;
 
 use Plank\Checkpoint\Models\Revision;
-use Plank\Checkpoint\Tests\Support\Post;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class RevisionObservablesTest extends TestCase

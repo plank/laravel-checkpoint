@@ -3,7 +3,7 @@
 namespace Plank\Checkpoint\Tests\Unit;
 
 use Plank\Checkpoint\Models\Checkpoint;
-use Plank\Checkpoint\Tests\Support\Post;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class CheckpointModelTest extends TestCase

@@ -2,7 +2,8 @@
 
 namespace Plank\Checkpoint\Tests\Feature;
 
-use Plank\Checkpoint\Tests\Support\Post;
+use Illuminate\Support\Facades\Config;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class RevisionMetadataTest extends TestCase

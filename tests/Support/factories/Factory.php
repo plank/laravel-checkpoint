@@ -2,8 +2,9 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use Plank\Checkpoint\Tests\Support\{Comment,Post};
 use Faker\Generator as Faker;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Comment;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 
 $factory->define(Post::class, function (Faker $faker) {
     return [
@@ -17,7 +18,7 @@ $factory->define(Post::class, function (Faker $faker) {
 
 $factory->define(Comment::class, function (Faker $faker) {
     return [
-        'content' => $faker->paragraph,
+        'body' => $faker->paragraph,
         'post_id' => Post::all()->random()->id,
     ];
 });
