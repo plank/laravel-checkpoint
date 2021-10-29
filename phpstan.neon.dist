@@ -1,0 +1,25 @@
+includes:
+    - ./vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+
+    paths:
+        - src
+        - config
+        - database
+        - tests
+
+    # The level 8 is the highest level
+    level: 1
+
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+        - '#Call to an undefined method Illuminate\\Support\\HigherOrder#'
+        - '#Call to an undefined method Illuminate\\Container\\Container#'
+        - path: database/factories/*
+          message: '#Undefined variable: \$factory#'
+
+    excludePaths:
+        - **/vendor/**/*.php
+
+    checkMissingIterableValueType: false
