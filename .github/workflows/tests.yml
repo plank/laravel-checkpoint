@@ -1,6 +1,16 @@
 name: Tests
 
-on: [push, pull_request]
+on:
+  pull_request:
+    types: [ opened, synchronize, closed ]
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - README.md
+      - CHANGELOG.md
+      - .gitignore
+      - .github/**
 
 jobs:
   test:
