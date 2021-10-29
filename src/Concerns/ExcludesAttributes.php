@@ -14,13 +14,20 @@ trait ExcludesAttributes
 {
 
     /**
+     * Work around for a PHP limitation where properties set on traits
+     * can't be redefined in the classes directly using that trait
+     * @var array
+     */
+    private $internalExcluded = [];
+
+    /**
      * Return the column that will be excluded when replicating your model in performRevision()
      *
      * @return array
      */
     public function getExcluded(): array
     {
-        return $this->excluded ?? [];
+        return $this->excluded ?? $this->internalExcluded;
     }
 
     /**
@@ -32,7 +39,11 @@ trait ExcludesAttributes
     public function exclude($excluded): self
     {
         if (is_array($excluded)) {
-            $this->excluded = $excluded;
+            if (isset($this->excluded)) {
+                $this->excluded = $excluded;
+            } else {
+                $this->internalExcluded = $excluded;
+            }
         } elseif (is_string($excluded)) {
             $this->mergeExcluded([$excluded]);
         }
@@ -48,7 +59,7 @@ trait ExcludesAttributes
      */
     public function mergeExcluded(array $excluded): self
     {
-        $this->excluded = array_merge($this->excluded, $excluded);
+        $this->exclude(array_merge($this->getExcluded(), $excluded));
 
         return $this;
     }
@@ -65,7 +76,11 @@ trait ExcludesAttributes
             $this->exclude([]);
         } elseif (is_array($excluded)) {
             foreach ($excluded as $key) {
-                unset($this->excluded[$key]);
+                if (isset($this->excluded)) {
+                    unset($this->excluded[$key], $this->internalExcluded[$key]);
+                } else {
+                    unset($this->internal_excluded[$key]);
+                }
             }
         }
 

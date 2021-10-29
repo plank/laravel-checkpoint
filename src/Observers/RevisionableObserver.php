@@ -85,6 +85,7 @@ class RevisionableObserver
     public function deleting($model)
     {
         if (method_exists($model, 'bootSoftDeletes') && !$model->isForceDeleting()) {
+            $model->clearExcluded();
             $model->performRevision();
             $model->syncChanges(); // copy over dirty values to changes, mimics natural laravel update
             $model->syncOriginal(); // clears dirty without triggering a db update, values are already up-to-date

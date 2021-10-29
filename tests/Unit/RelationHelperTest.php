@@ -2,6 +2,10 @@
 
 namespace Plank\Checkpoint\Tests\Unit;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 use Plank\Checkpoint\Helpers\RelationHelper;
 use Plank\Checkpoint\Tests\TestCase;
@@ -62,6 +66,47 @@ class RelationHelperTest extends TestCase
         $this->assertNotEquals($originalTypes, $helper('relationTypes'));
         RelationHelper::resetRelationTypes();
         $this->assertEquals($originalTypes, $helper('relationTypes'));
+    }
+
+    /**
+     * @test
+     */
+    public function can_verify_direct_relations(): void
+    {
+        $this->assertFalse(RelationHelper::isChild(BelongsTo::class));
+        $this->assertTrue(RelationHelper::isChild(HasOne::class));
+
+        $this->assertTrue(RelationHelper::isDirect(BelongsTo::class));
+        $this->assertTrue(RelationHelper::isDirect(HasOne::class));
+        $this->assertFalse(RelationHelper::isDirect(BelongsToMany::class));
+    }
+
+    /**
+     * @test
+     */
+    public function can_verify_child_relations(): void
+    {
+        $this->assertTrue(RelationHelper::isChildSingle(HasOne::class));
+        $this->assertFalse(RelationHelper::isChildMultiple(HasOne::class));
+
+        $this->assertTrue(RelationHelper::isChildMultiple(HasMany::class));
+        $this->assertFalse(RelationHelper::isChildSingle(HasMany::class));
+
+        $this->assertTrue(RelationHelper::isChild(HasOne::class));
+        $this->assertTrue(RelationHelper::isChild(HasMany::class));
+        $this->assertFalse(RelationHelper::isChild(BelongsTo::class));
+        $this->assertFalse(RelationHelper::isChild(BelongsToMany::class));
+    }
+
+    /**
+     * @test
+     */
+    public function can_retrieve_all_pivot_relations(): void
+    {
+        $this->assertTrue(RelationHelper::isPivoted(BelongsToMany::class));
+        $this->assertFalse(RelationHelper::isPivoted(HasOne::class));
+        $this->assertFalse(RelationHelper::isPivoted(HasMany::class));
+        $this->assertFalse(RelationHelper::isPivoted(BelongsTo::class));
     }
 
 }

@@ -14,6 +14,13 @@ trait IgnoresAttributes
 {
 
     /**
+     * Work around for a PHP limitation where properties set on traits
+     * can't be redefined in the classes directly using that trait
+     * @var array
+     */
+    private $internalIgnored = [];
+
+    /**
      * Set a protected ignored array on your model to skip revisioning on specific columns
      * Backwards compatible with unwatched
      *
@@ -21,7 +28,7 @@ trait IgnoresAttributes
      */
     public function getIgnored(): array
     {
-        return $this->ignored ?? $this->getRevisionUnwatched() ?? [];
+        return $this->ignored ?? $this->internalIgnored ?? $this->getRevisionUnwatched();
     }
 
     /**
@@ -33,7 +40,11 @@ trait IgnoresAttributes
     public function ignore($ignored): self
     {
         if (is_array($ignored)) {
-            $this->ignored = $ignored;
+            if (isset($this->ignored)) {
+                $this->ignored = $ignored;
+            } else {
+                $this->internalIgnored = $ignored;
+            }
         } elseif (is_string($ignored)) {
             $this->mergeIgnored([$ignored]);
         }
@@ -49,7 +60,7 @@ trait IgnoresAttributes
      */
     public function mergeIgnored(array $ignored): self
     {
-        $this->ignored = array_merge($this->ignored, $ignored);
+        $this->ignore(array_merge($this->getIgnored(), $ignored));
 
         return $this;
     }

@@ -420,6 +420,7 @@ trait HasRevisions
             if (method_exists($child, 'bootHasRevisions')) {
                 // Revision the child model by attaching it to our new copy
                 $child->setAttribute($this->$relation()->getForeignKeyName(), $copy->getKey());
+                $child->clearExcluded();
                 $child->save();
             } else {
                 $copy->$relation()->save($child->replicate());

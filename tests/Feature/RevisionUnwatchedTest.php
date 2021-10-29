@@ -21,7 +21,7 @@ class RevisionUnwatchedTest extends TestCase
         $block->save();
 
         $this->assertEquals(1, $block->revisions()->count());
-        $this->assertEquals(1, Page::withoutRevisions()->count());
+        $this->assertEquals(1, Block::withoutRevisions()->count());
     }
 
     /**
