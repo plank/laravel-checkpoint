@@ -8,6 +8,7 @@ use ReflectionClass;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Models\Checkpoint;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Plank\Checkpoint\Scopes\RevisionScope;
 use Plank\Checkpoint\Helpers\RelationHelper;
 use Plank\Checkpoint\Observers\RevisionableObserver;
@@ -16,14 +17,21 @@ use Plank\Checkpoint\Observers\RevisionableObserver;
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at($until)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since($since)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal($until, $since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNewestAt($until, $since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNewest()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withInitial()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withPrevious()
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNext()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
  *
- * @mixin \Eloquent
+ * @mixin Model
  */
 trait HasRevisions
 {
     use HasCheckpointRelations;
     use StoresRevisionMeta;
+    use IgnoresAttributes;
+    use ExcludesAttributes;
 
     /**
      * Boot has revisions trait for a model.
@@ -136,6 +144,33 @@ trait HasRevisions
     }
 
     /**
+     * Get the id of the initial revisioned item
+     *
+     * @return mixed
+     */
+    public function scopeWithNewestAt($builder, $until = null, $since = null)
+    {
+        $revision = config('checkpoint.models.revision');
+        return $builder->withInitial()->addSelect([
+            'newest_id' => $revision::select('revisionable_id')
+                ->whereIn('id', $revision::latestIds($until, $since)
+                    ->whereColumn('original_revisionable_id', 'initial_id')
+                    ->where('revisionable_type', get_class($this))
+                )
+        ])->with('newest');
+    }
+
+    /**
+     * add a sub-select column linking this model to its most recent revision
+     *
+     * @return mixed
+     */
+    public function scopeWithNewest($builder)
+    {
+        return $builder->withNewestAt();
+    }
+
+    /**
      * Get the id of the initial revisionable
      *
      * @param  $value
@@ -178,6 +213,20 @@ trait HasRevisions
         }
         // when value isn't set by extra subselect scope, fetch from relation
         return $this->revision->next->revisionable_id ?? null;
+    }
+
+    /**
+     * Get the newest revision in the lineage
+     *
+     * @return static
+     */
+    public function getNewestIdAttribute($value)
+    {
+        if ($value !== null || array_key_exists('newest_id', $this->attributes)) {
+            return $value;
+        }
+        // dependency on latest boolean column, alternative to using max id
+        return $this->revisions()->where('latest', true)->first()->revisionable_id;
     }
 
 
@@ -225,38 +274,6 @@ trait HasRevisions
     }
 
     /**
-     * Return the columns to ignore when creating a copy of a model.
-     * Gets passed to replicate() in saveAsRevision().
-     *
-     * @return array
-     */
-    public function getExcludedColumns(): array
-    {
-        return $this->getRevisionUnwatched();
-    }
-
-    /**
-     * Set a protected unwatched array on your model to skip revisioning on specific columns
-     *
-     * @return array
-     */
-    public function getRevisionUnwatched(): array
-    {
-        return $this->unwatched ?? [];
-    }
-
-    /**
-     * Modify the contents of the unwatched property.
-     * Useful for adjusting what columns should be default when creating a new revision on a child relationship.
-     *
-     * @param  null  $unwatched
-     */
-    public function setRevisionUnwatched($unwatched = null): void
-    {
-        $this->unwatched = $unwatched ?? $this->getRevisionUnwatched();
-    }
-
-    /**
      * Get an array of the relationships to be ignored during duplication
      *
      * @return array
@@ -275,13 +292,13 @@ trait HasRevisions
      *
      * @return bool
      */
-    public function shouldRevision(): bool
+    protected function shouldRevision(): bool
     {
         return true;
     }
 
     /**
-     * Update or Create the revision for this model.
+     * Create the revision for this model.
      *
      * @param  array  $values
      * @return bool|\Illuminate\Database\Eloquent\Model
@@ -300,7 +317,7 @@ trait HasRevisions
     }
 
     /**
-     * Each link to a release contains metadata that can be used to build a previous version of given model
+     * Perform a revision on this model that will attempt to duplicate itself & all of its relations.
      *
      * @return bool
      * @throws \Throwable
@@ -317,39 +334,17 @@ trait HasRevisions
             $this->startRevision();
 
             // Replicate the current object
-            $copy = $this->withoutRelations()->replicate($this->getExcludedColumns());
+            $copy = $this->withoutRelations()->replicate($this->getExcluded());
             $copy->save();
             $copy->refresh();
 
             // Reattach relations to the copied object
-            $excludedRelations = $this->getExcludedRelations();
-            foreach (RelationHelper::getModelRelations($this) as $relation => $attributes) {
-                if (!in_array($relation, $excludedRelations, true)) {
-                    if (RelationHelper::isChild($attributes['type'])) {
-                        logger(self::class . " {$this->getKey()}: duplicating children via $relation ({$attributes['type']})");
-                        foreach ($this->$relation()->get() as $child) {
-                            if (method_exists($child, 'bootHasRevisions')) {
-                                // Revision the child model by attaching it to our new copy
-                                $child->setRawAttributes(array_merge($child->getOriginal(), [
-                                    $this->$relation()->getForeignKeyName() => $copy->getKey()
-                                ]));
-                                $child->setRevisionUnwatched();
-                                $child->save();
-                            } else {
-                                $copy->$relation()->save($child->replicate());
-                            }
-                        }
-                    } elseif (RelationHelper::isPivoted($attributes['type'])) {
-                        logger(self::class . " {$this->getKey()}: duplicating pivots via $relation ({$attributes['type']})");
-                        $copy->$relation()->syncWithoutDetaching($this->$relation()->get());
-                    } else {
-                        logger(self::class . " {$this->getKey()}: skipping duplication of $relation ({$attributes['type']})");
-                    }
-                }
-            }
+            $this->replicateRelationsTo($copy);
 
+            // Retrieve dirty columns on the current model instance before resetting it
+            $dirty = array_diff(array_keys($this->getDirty()), $this->getExcluded());
             // Reset the current model instance to original data
-            $this->setRawAttributes($this->getOriginal());
+            $this->setRawAttributes($this->original);
 
             //  Handle unique columns by storing them as meta on the revision itself
             $this->moveMetaToRevision();
@@ -363,15 +358,76 @@ trait HasRevisions
                 'previous_revision_id' => $this->revision->id,
             ]);
 
-            // Point $this to the duplicate, unload its relations and refresh the object
+            // Return dirty values back onto $this model instance
             $this->setRawAttributes($copy->getAttributes());
+            // force using new revision key for any future queries
+            unset($this->original[$this->getKeyName()]);
+            // unset any loaded relations, their data is no longer valid
             $this->unsetRelations();
-            $this->refresh();
         });
 
         $this->fireModelEvent('revisioned', false);
 
         return true;
+    }
+
+    /**
+     * Iterate over all possible relations on this model and decide how to duplicate them to the given $copy model.
+     * Only children and pivots are replicated by default, parents should never be duplicated. This method support
+     * standards laravel relations defined in RelationHelper.
+     *
+     * Custom handlers for relations and relation types can be registered as a function on your model or in a trait,
+     * like you would with model scopes. syntax: replicate<Relation>Relation() or replicate<RelationType>Relations()
+     *
+     * @param Model $copy
+     * @throws \ReflectionException
+     * @throws \Throwable
+     */
+    protected function replicateRelationsTo(Model $copy)
+    {
+        $relationHelper = resolve(RelationHelper::class);
+
+        $excluded = $this->getExcludedRelations();
+        $relations = collect($relationHelper::getModelRelations($this))->map->type->except($excluded);
+
+        foreach ($relations as $relation => $type) {
+            $shortType = substr($type, strrpos($type, '\\') + 1);
+            if (method_exists($this, 'replicate' . ucfirst($relation) . 'Relation')) {
+                $this->{'replicate' . ucfirst($relation) . 'Relation'}($copy, $relation, $type); // replicateModulesRelation()
+            } elseif (method_exists($this, "replicate{$shortType}Relations" )) {
+                $this->{"replicate{$shortType}Relations"}($copy, $relation, $type); // replicateHasManyRelations()
+            } elseif ($relationHelper::isChild($type)) {
+                $this->replicateChildrenTo($copy, $relation);
+            } elseif ($relationHelper::isPivoted($type)) { // default is pivot
+                $changes = $copy->$relation()->syncWithoutDetaching($this->$relation()->get());
+            } else {
+                // skipped relation
+            }
+        }
+    }
+
+    /**
+     * Replicate the children available through a given relationship.
+     * Revisionable models will be modified and prompted to create a new revision, other will simply be replicated.
+     *
+     * @param Model $copy
+     * @param string $relation
+     */
+    protected function replicateChildrenTo($copy, $relation)
+    {
+        foreach ($this->$relation()->get() as $child) {
+            /**
+             * @var Model|HasRevisions $child
+             */
+            if (method_exists($child, 'bootHasRevisions')) {
+                // Revision the child model by attaching it to our new copy
+                $child->setAttribute($this->$relation()->getForeignKeyName(), $copy->getKey());
+                $child->clearExcluded();
+                $child->save();
+            } else {
+                $copy->$relation()->save($child->replicate());
+            }
+        }
     }
 
     /**
@@ -400,5 +456,26 @@ trait HasRevisions
     public function deleteAllRevisions(): void
     {
 
+    }
+
+    /**
+     * Sync the changed attributes.
+     *
+     * @param  array|string|null
+     * @return $this
+     */
+    public function syncChangedAttributes($changes = null): self
+    {
+        if (empty($changes)) {
+            return $this->syncChanges();
+        }
+
+        $changes = is_array($changes) ? $changes : func_get_args();
+
+        foreach ($changes as $key) {
+            $this->changes[$key] = $this->attributes[$key];
+        }
+
+        return $this;
     }
 }

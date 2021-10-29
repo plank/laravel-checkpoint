@@ -67,21 +67,28 @@ trait StoresRevisionMeta
      */
     public function moveMetaToRevision(&$revision = null)
     {
-        $metaColumns = $this->getRevisionMeta();
-        //if (!empty($metaColumns)) {
-            $meta = [];
-            foreach ($metaColumns as $attribute) {
-                $meta[$attribute] = $this->$attribute;
+        $uniqueColumns = $this->getRevisionMeta();
+        if (!empty($uniqueColumns) && config('checkpoint.store_unique_columns_on_revision')) {
+            $unique = [];
+            foreach ($uniqueColumns as $attribute) {
+                $unique[$attribute] = $this->$attribute;
                 // TODO: check column is nullable or put empty string
                 $this->$attribute = null;
             }
             $revision = $revision ?? $this->revision;
-            $revision->metadata = $meta;
-            $this->withoutEvents(function () use ($revision) {
+            $revision->metadata = $unique;
+            self::withoutEvents(function () use ($revision) {
                 $revision->save();
                 $this->save(); // modified attributes, make sure this is saved without events
             });
-        //}
+            // Reset original unique columns of the model back to what they were
+            foreach ($uniqueColumns as $attribute) {
+                $this->original[$attribute] = $unique[$attribute];
+                $this->$attribute = $unique[$attribute];
+            }
+            // Clear out listed changes, aka the unique columns set to null
+            $this->syncChanges();
+        }
     }
 
     /**

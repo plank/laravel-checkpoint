@@ -4,7 +4,7 @@ namespace Plank\Checkpoint\Tests\Feature;
 
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
-use Plank\Checkpoint\Tests\Support\Post;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class RevisionableRelationsTest extends TestCase
@@ -39,11 +39,15 @@ class RevisionableRelationsTest extends TestCase
     {
         $post = factory(Post::class)->create();
         $revision1 = $post->revision;
+        $original_id = $post->id;
+
         $post->performRevision();
         $revision2 = $post->revision;
 
-        $this->assertNotEquals($revision1->id, $revision2->id);
-        $this->assertEquals($post->revision->id, $revision2->id);
+        $this->assertTrue($post->initial()->exists());
+        $this->assertEquals($original_id, Post::withInitial()->find($post->id)->older->id);
+
+        $this->assertEquals($post->id, $revision2->revisionable_id);
         $this->assertEquals($post->initial->id, $revision1->revisionable_id);
     }
 

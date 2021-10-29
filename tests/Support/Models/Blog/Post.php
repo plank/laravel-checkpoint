@@ -1,6 +1,6 @@
 <?php
 
-namespace Plank\Checkpoint\Tests\Support;
+namespace Plank\Checkpoint\Tests\Support\Models\Blog;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;

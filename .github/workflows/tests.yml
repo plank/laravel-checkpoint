@@ -1,6 +1,16 @@
 name: Tests
 
-on: [push, pull_request]
+on:
+  pull_request:
+    types: [ opened, synchronize, closed ]
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - README.md
+      - CHANGELOG.md
+      - .gitignore
+      - .github/**
 
 jobs:
   test:
@@ -9,10 +19,12 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [7.4]
-        laravel: [6.*, 7.*]
+        php: [7.4, 8.0]
+        laravel: [6.*, 7.*, 8.*]
         stability: [prefer-stable]
         include:
+          - laravel: 8.*
+            testbench: 6.*
           - laravel: 7.*
             testbench: 5.*
           - laravel: 6.*
@@ -46,6 +58,10 @@ jobs:
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
+      - name: Install Legacy Factories Package
+        run: composer require "laravel/legacy-factories" --no-interaction --no-update
+        if: ${{ contains(matrix.laravel, '8') }}
 
       - name: Execute tests
         run: vendor/bin/phpunit

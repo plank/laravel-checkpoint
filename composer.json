@@ -25,14 +25,16 @@
         }
     ],
     "require": {
-        "php": "^7.1.3",
+        "php": "^7.1.3|^8.0",
         "ext-json": "*",
         "illuminate/support": "5.8.*|^6.0|^7.0|^8.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.8 || ^5.2",
-        "phpunit/phpunit": "^9.3",
-        "vimeo/psalm": "^3.11"
+        "laravel/legacy-factories": "^1.0.4",
+        "nunomaduro/larastan": "^0.7.8",
+        "orchestra/testbench": "^4.8 || ^5.2 || ^6.0",
+        "phpunit/phpunit": "^9.5",
+        "vimeo/psalm": "^4.8"
     },
     "autoload": {
         "psr-4": {
@@ -46,7 +48,9 @@
     },
     "scripts": {
         "psalm": "vendor/bin/psalm",
+        "phpstan": "vendor/bin/phpstan",
         "test": "vendor/bin/phpunit --colors=always",
+        "testdox": "vendor/bin/phpunit --textdox --colors=always",
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
     },
     "config": {

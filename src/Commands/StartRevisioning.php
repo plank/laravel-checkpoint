@@ -65,7 +65,7 @@ class StartRevisioning extends Command
         }
 
         foreach ($models as $class) {
-            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint, &$timeDelta) {
+            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint) {
                foreach ($results as $item) {
                    $item->startRevision();
                    $revision = $item->revision;
