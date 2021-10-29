@@ -50,6 +50,7 @@
         "psalm": "vendor/bin/psalm",
         "phpstan": "vendor/bin/phpstan",
         "test": "vendor/bin/phpunit --colors=always",
+        "testdox": "vendor/bin/phpunit --textdox --colors=always",
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
     },
     "config": {

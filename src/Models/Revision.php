@@ -115,7 +115,7 @@ class Revision extends MorphPivot
         'metadata' => 'array'
     ];
 
-    protected static function booted()
+    protected static function boot()
     {
         static::deleting(function (self $revision) {
             $next = $revision->next;
@@ -129,6 +129,7 @@ class Revision extends MorphPivot
             }
 
         });
+        parent::boot();
     }
 
     /**
