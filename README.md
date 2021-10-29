@@ -163,10 +163,10 @@ manage this field by storing it as metadata on the ```Revision```. The package a
 saving a new ```Revision``` of the ```Room``` the ```code``` will automatically be saved on the ```metadata``` field of
 the revision and set as null on the ```Room```.
 
-### Unwatched Fields
+### Ignored Fields
 When updating the fields of a *Model*, some fields may not warrant creating a new ```Revision``` of the *Model*. You can
-prevent a new ```Revision``` from being created when specific fields are updated by setting the 
-```protected $unwatched``` array on the model being revisioned. 
+prevent a new ```Revision``` from being created when specific fields are updated by setting the ```protected $ignored```
+array on the model being revisioned. 
 
 ### Should Revision
 If you have more complex cases where you may not want to create a new ```Revision``` when updating a *Model*, you can 
@@ -175,8 +175,9 @@ value, a new ```Revision``` will be created when updating, and when it returns a
     
 ### Excluded Columns
 When creating a new ```Revision``` of a *Model* there may be some fields which do not make sense to have their values 
-copied over. In those cases you can add those values to the ``` protected $excludedColumns``` array on the *Model* you
-are revisioning.
+copied over. In those cases you can add those values to the ``` protected $excluded``` array on the *Model* you
+are revisioning. Some operations like deleting / restoring / revisioning children require a full copy and will ignore
+this option.
 
 ### Excluded Relations
 When creating a new ```Revision``` of a *Model* there may be relations which do not make sense to duplicate. In those 
