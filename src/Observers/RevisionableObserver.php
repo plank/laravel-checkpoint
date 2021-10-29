@@ -6,6 +6,40 @@ use Illuminate\Database\Eloquent\Model;
 
 class RevisionableObserver
 {
+    /**
+     * Handle the parent model "replicating" event.
+     * Followed by saving, creating, created, saved events
+     *
+     * @param  $model
+     * @return void
+     */
+    public function replicating($model) {
+        //
+    }
+
+    /**
+     * Handle the parent model "restoring" event.
+     * Followed by saving & updating events
+     *
+     * @param  $model
+     * @return void|bool
+     */
+    public function restoring($model)
+    {
+        $model->clearExcluded();
+    }
+
+    /**
+     * Handle the parent model "restored" event.
+     * Preceded by updated & saved events
+     *
+     * @param  $model
+     * @return void
+     */
+    public function restored($model)
+    {
+        //
+    }
 
     /**
      * Handle the parent model "saving" event.
@@ -120,17 +154,6 @@ class RevisionableObserver
      * @return void|bool
      */
     public function forceDeleted($model)
-    {
-        //
-    }
-
-    /**
-     * Handle the parent model "restored" event.
-     *
-     * @param  $model
-     * @return void
-     */
-    public function restored($model)
     {
         //
     }
