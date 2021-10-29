@@ -23,6 +23,12 @@ return [
      */
     'run_migrations' => env('RUN_CHECKPOINT_MIGRATIONS', true),
 
+    /*
+     * Should checkpoint store unique model columns in the revision meta
+     * defaults to true for compatibility
+     */
+    'store_unique_columns_on_revision' => env('REVISIONS_STORE_UNIQUE_COLUMNS', true),
+
     'models' => [
 
         /*
