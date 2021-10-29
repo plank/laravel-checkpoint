@@ -87,7 +87,7 @@ class RevisionObservablesTest extends TestCase
         // new revision matches old one in everything but id and the deleted_at
         $changed = collect($post->getAttributes());
         $this->assertNotEquals($post->deleted_at, $original->get('deleted_at'));
-        $this->assertEmpty($original->diffAssoc($changed)->except('id', ...$post->getDates()));
+        $this->assertEmpty($original->diffAssoc($changed)->except('id', 'deleted_at'));
     }
 
     /**
