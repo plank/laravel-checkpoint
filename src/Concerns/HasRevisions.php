@@ -17,13 +17,14 @@ use Plank\Checkpoint\Observers\RevisionableObserver;
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder at($until)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder since($since)
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder temporal($until, $since)
- * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withLatestAt($until, $since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNewestAt($until, $since)
+ * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNewest()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withInitial()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withPrevious()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withNext()
  * @method static static|\Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder withoutRevisions()
  *
- * @mixin \Eloquent
+ * @mixin Model
  */
 trait HasRevisions
 {
@@ -338,7 +339,7 @@ trait HasRevisions
             $copy->refresh();
 
             // Reattach relations to the copied object
-            $this->revisionRelations($copy);
+            $this->replicateRelationsTo($copy);
 
             // Retrieve dirty columns on the current model instance before resetting it
             $dirty = array_diff(array_keys($this->getDirty()), $this->getExcluded());
@@ -371,17 +372,18 @@ trait HasRevisions
     }
 
     /**
-     * Iterate over all possible relations on this model and decide how to duplicate the link represented by them.
-     * By default, only children and pivots are replicated.
+     * Iterate over all possible relations on this model and decide how to duplicate them to the given $copy model.
+     * Only children and pivots are replicated by default, parents should never be duplicated. This method support
+     * standards laravel relations defined in RelationHelper.
      *
      * Custom handlers for relations and relation types can be registered as a function on your model or in a trait,
-     * like you would with model scopes. syntax: revision<Relation>() or revision<RelationType>()
+     * like you would with model scopes. syntax: replicate<Relation>Relation() or replicate<RelationType>Relations()
      *
      * @param Model $copy
      * @throws \ReflectionException
      * @throws \Throwable
      */
-    private function revisionRelations(Model $copy)
+    protected function replicateRelationsTo(Model $copy)
     {
         $relationHelper = resolve(RelationHelper::class);
 
@@ -389,12 +391,13 @@ trait HasRevisions
         $relations = collect($relationHelper::getModelRelations($this))->map->type->except($excluded);
 
         foreach ($relations as $relation => $type) {
-            if (method_exists($this, 'revision' . ucfirst($relation))) {
-                $this->{'revision' . ucfirst($relation)}($copy, $relation, $type); // revisionModules()
-            } elseif (method_exists($this, 'revision' . substr($type, strrpos($type, '\\') + 1))) {
-                $this->{'revision' . ucfirst($type)}($copy, $relation, $type); // revisionHasMany()
+            $shortType = substr($type, strrpos($type, '\\') + 1);
+            if (method_exists($this, 'replicate' . ucfirst($relation) . 'Relation')) {
+                $this->{'replicate' . ucfirst($relation) . 'Relation'}($copy, $relation, $type); // replicateModulesRelation()
+            } elseif (method_exists($this, "replicate{$shortType}Relations" )) {
+                $this->{"replicate{$shortType}Relations"}($copy, $relation, $type); // replicateHasManyRelations()
             } elseif ($relationHelper::isChild($type)) {
-                $this->revisionChildren($copy, $relation);
+                $this->replicateChildrenTo($copy, $relation);
             } elseif ($relationHelper::isPivoted($type)) { // default is pivot
                 $changes = $copy->$relation()->syncWithoutDetaching($this->$relation()->get());
             } else {
@@ -407,11 +410,10 @@ trait HasRevisions
      * Replicate the children available through a given relationship.
      * Revisionable models will be modified and prompted to create a new revision, other will simply be replicated.
      *
-     *
      * @param Model $copy
      * @param string $relation
      */
-    protected function revisionChildren($copy, $relation)
+    protected function replicateChildrenTo($copy, $relation)
     {
         foreach ($this->$relation()->get() as $child) {
             /**
