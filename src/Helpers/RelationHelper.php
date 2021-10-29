@@ -227,16 +227,22 @@ class RelationHelper
      * @param boolean $merge
      * @return void
      */
-    public static function setRelationTypes(array $types = [], bool $merge = false): void
+    public static function setRelationTypes(array $types = []): void
     {
-        if ($merge) {
-            static::$relationTypes = array_merge(static::$relationTypes, $types);
-        } else {
-            static::$relationTypes = array_merge([
-                'hasOne', 'hasMany', 'hasManyThrough', 'belongsTo', 'belongsToMany',
-                'morphOne', 'morphMany', 'morphTo', 'morphToMany',
-            ], $types);
-        }
+        static::$relationTypes = array_merge([
+            'hasOne', 'hasMany', 'hasManyThrough', 'belongsTo', 'belongsToMany',
+            'morphOne', 'morphMany', 'morphTo', 'morphToMany',
+        ], $types);
+    }
+
+    /**
+     * @param array $types
+     * @param boolean $merge
+     * @return void
+     */
+    public static function mergeRelationTypes(array $types = [], bool $merge = false): void
+    {
+        static::$relationTypes = array_merge(static::$relationTypes, $types);
     }
 
     /**

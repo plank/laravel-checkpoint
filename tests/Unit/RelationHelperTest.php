@@ -53,6 +53,22 @@ class RelationHelperTest extends TestCase
     /**
      * @test
      */
+    public function can_merge_relation_types_with_laravel_default(): void
+    {
+        // access protected static properties, kind of like reflection but quicker & concise
+        $helper = resolve(RelationHelper::class);
+        $helper = \Closure::bind(function($prop){return static::$$prop;}, $helper, $helper);
+        $originalTypes = $helper('relationTypes');
+        $types = ['a','b','c'];
+
+        $this->assertNotEquals($types, $originalTypes);
+        RelationHelper::mergeRelationTypes(['a','b','c']);
+        $this->assertEquals(array_merge($originalTypes, ['a','b','c']), $helper('relationTypes'));
+    }
+
+    /**
+     * @test
+     */
     public function can_reset_relation_types_to_laravel_default(): void
     {
         // access protected static properties, kind of like reflection but quicker & concise
