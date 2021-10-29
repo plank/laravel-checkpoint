@@ -49,5 +49,9 @@ jobs:
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
+      - name: Install Legacy Factories Package
+        run: composer require "laravel/legacy-factories" --no-interaction --no-update
+        if: ${{ contains(matrix.laravel, '8') }}
+
       - name: Execute tests
         run: vendor/bin/phpunit
