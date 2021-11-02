@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
  * @method static Builder|Revision newModelQuery()
  * @method static Builder|Revision newQuery()
  * @method static Builder|Revision query()
+ * @method static \Illuminate\Database\Query\Builder|Revision select($columns = ['*'])
  * @method static Builder|Revision whereId($value)
  * @method static Builder|Revision whereType($value)
  * @method static Builder|Revision whereRevisionableId($value)
