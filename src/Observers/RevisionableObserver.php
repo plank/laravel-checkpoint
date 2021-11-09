@@ -11,7 +11,7 @@ class RevisionableObserver
      * Handle the parent model "replicating" event.
      * Followed by saving, creating, created, saved events
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function replicating(Model $model) {
@@ -22,7 +22,7 @@ class RevisionableObserver
      * Handle the parent model "restoring" event.
      * Followed by saving & updating events
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void|bool
      */
     public function restoring(Model $model)
@@ -34,7 +34,7 @@ class RevisionableObserver
      * Handle the parent model "restored" event.
      * Preceded by updated & saved events
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function restored(Model $model)
@@ -46,7 +46,7 @@ class RevisionableObserver
      * Handle the parent model "saving" event.
      * Happens before either a creating or updating event
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function saving(Model $model) {
@@ -57,7 +57,7 @@ class RevisionableObserver
      * Handle the parent model "saved" event.
      * Happens after either a created or updated event
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function saved(Model $model) {
@@ -67,7 +67,7 @@ class RevisionableObserver
     /**
      * Handle the parent model "creating" event.
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function creating(Model $model)
@@ -78,7 +78,7 @@ class RevisionableObserver
     /**
      * Handle the parent model "created" event.
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function created(Model $model)
@@ -89,7 +89,7 @@ class RevisionableObserver
     /**
      * Handle the parent model "updating" event.
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function updating(Model $model)
@@ -103,7 +103,7 @@ class RevisionableObserver
     /**
      * Handle the parent model "updated" event.
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function updated(Model $model)
@@ -114,7 +114,7 @@ class RevisionableObserver
     /**
      * Handle the parent model "deleting" event.
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function deleting(Model $model)
@@ -130,7 +130,7 @@ class RevisionableObserver
     /**
      * Handle the parent model "deleted" event.
      *
-     * @param Model|HasRevisions $model
+     * @param Model $model
      * @return void
      */
     public function deleted(Model $model)
@@ -151,8 +151,8 @@ class RevisionableObserver
      * Handle the parent model "forceDeleted" event.
      * Only fired if the model is using SoftDeletes
      *
-     * @param Model|HasRevisions $model
-     * @return void|bool
+     * @param Model $model
+     * @return void
      */
     public function forceDeleted(Model $model)
     {

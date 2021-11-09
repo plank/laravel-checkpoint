@@ -160,14 +160,17 @@ class RelationHelper
      * Get all the defined model class relations.
      * Not just the eager loaded ones present in the $relations Eloquent property.
      *
-     * @param Model|string $model
+     * @param Model|class-string $model
      * @param bool $refresh
      * @return array
      * @throws ReflectionException
      */
-    public static function getModelRelations($model, $refresh = false): array
+    public static function getModelRelations($model, bool $refresh = false): array
     {
+        /** @var class-string $class */
         $class = ($model instanceof Model) ? get_class($model) : $model;
+        $model = ($model instanceof Model) ? $model : new $model;
+
         // Check if the relations on this model were already parsed
         if (!$refresh && array_key_exists($class, static::$relations)) {
             return static::$relations[$class];
@@ -224,7 +227,6 @@ class RelationHelper
 
     /**
      * @param array $types
-     * @param boolean $merge
      * @return void
      */
     public static function setRelationTypes(array $types = []): void
@@ -237,10 +239,9 @@ class RelationHelper
 
     /**
      * @param array $types
-     * @param boolean $merge
      * @return void
      */
-    public static function mergeRelationTypes(array $types = [], bool $merge = false): void
+    public static function mergeRelationTypes(array $types = []): void
     {
         static::$relationTypes = array_merge(static::$relationTypes, $types);
     }
@@ -251,7 +252,7 @@ class RelationHelper
      */
     public static function addRelationTypes(array $types): void
     {
-        static::setRelationTypes($types, true);
+        static::mergeRelationTypes($types);
     }
 
     /**

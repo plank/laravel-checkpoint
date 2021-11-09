@@ -71,7 +71,7 @@ class Checkpoint extends Model
      *
      * @var self
      */
-    public static self $active;
+    public static $active;
 
     /**
      * The name of the "updated at" column.
@@ -113,7 +113,7 @@ class Checkpoint extends Model
      *
      * @var null|CheckpointStore
      */
-    protected static ?CheckpointStore $store = null;
+    protected static $store = null;
 
     /**
      * The "booting" method of the model.
@@ -135,23 +135,20 @@ class Checkpoint extends Model
     public static function getStore(): CheckpointStore
     {
         if (static::$store === null) {
-            /** @var CheckpointStore $storeClass */
+            /** @var class-string<CheckpointStore> $storeClass */
             $storeClass = config('checkpoint.store');
 
-            /** @var CheckpointStore $store */
-            $store = new $storeClass;
-
-            static::$store = $store;
+            static::$store = new $storeClass;
         }
 
         return static::$store;
-    } 
+    }
 
     /**
      * Set the active checkpoint we are viewing/updating
      *
-     * @param Checkpoint $checkpoint 
-     * @return void 
+     * @param Checkpoint $checkpoint
+     * @return void
      */
     public static function setActive(self $checkpoint): void
     {
@@ -161,7 +158,7 @@ class Checkpoint extends Model
     /**
      * Set the active checkpoint we are viewing/updating
      *
-     * @return void 
+     * @return void
      */
     public static function clearActive(): void
     {
@@ -181,11 +178,11 @@ class Checkpoint extends Model
     /**
      * Get the timeline the checkpoint belongs to
      *
-     * @return BelongsTo 
+     * @return BelongsTo
      */
     public function timeline(): BelongsTo
     {
-        /** @var string $timelineModel */
+        /** @var class-string<Timeline> $timelineModel */
         $timelineModel = config('checkpoint.models.timeline');
 
         return $this->belongsTo($timelineModel, static::TIMELINE_ID);
@@ -248,7 +245,7 @@ class Checkpoint extends Model
      */
     public function revisions(): HasMany
     {
-        /** @var Revision|string $revisionClass */ 
+        /** @var Revision|string $revisionClass */
         $revisionClass = config('checkpoint.models.revision');
 
         return $this->hasMany($revisionClass, $revisionClass::CHECKPOINT_ID);
