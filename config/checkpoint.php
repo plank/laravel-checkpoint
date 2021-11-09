@@ -56,5 +56,5 @@ return [
     /**
      * The class responsible for storing and retrieving the active bulletin for each request
      */
-    'store' => Plank\Checkpoint\Stores\BasicCheckpointStore::class
+    'store' => Plank\Checkpoint\Stores\BasicCheckpointStore::class,
 ];

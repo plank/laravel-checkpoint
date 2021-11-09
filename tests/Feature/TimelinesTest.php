@@ -5,7 +5,7 @@ namespace Plank\Checkpoint\Tests\Feature;
 use Carbon\Carbon;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Timeline;
-use Plank\Checkpoint\Tests\Support\Post;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class TimelinesTest extends TestCase

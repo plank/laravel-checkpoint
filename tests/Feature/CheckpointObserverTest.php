@@ -6,7 +6,7 @@ use Carbon\Carbon;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Models\Timeline;
-use Plank\Checkpoint\Tests\Support\Post;
+use Plank\Checkpoint\Tests\Support\Models\Blog\Post;
 use Plank\Checkpoint\Tests\TestCase;
 
 class CheckpointObserverTest extends TestCase
@@ -37,7 +37,7 @@ class CheckpointObserverTest extends TestCase
         factory(Post::class, 3)->create();
 
         $this->assertEquals(3, Post::query()->count());
-        
+
         // Changing the checkpoints timeline should cascade to the associated revisions
         $checkpoint2->timeline_id = $timelineA->id;
         $checkpoint2->save();
@@ -74,7 +74,7 @@ class CheckpointObserverTest extends TestCase
         factory(Post::class, 3)->create();
         $this->assertEquals(3, Post::query()->count());
 
-        // Changing the checkpoints timeline should cascade to the associated revisions and unset the 
+        // Changing the checkpoints timeline should cascade to the associated revisions and unset the
         $checkpoint2->delete();
         $this->assertNull(Checkpoint::active());
         $this->assertEquals(0, Post::at($checkpoint2)->count());

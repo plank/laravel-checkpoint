@@ -60,7 +60,7 @@ abstract class TestCase extends Orchestra
     /**
      * @return void
      */
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         Checkpoint::clearActive();
 
