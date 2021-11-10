@@ -5,6 +5,9 @@ namespace Plank\Checkpoint\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
+use Plank\Checkpoint\Models\Checkpoint;
+use Plank\Checkpoint\Models\Revision;
+use Plank\Checkpoint\Models\Timeline;
 
 class RevisionScope implements Scope
 {
@@ -30,7 +33,10 @@ class RevisionScope implements Scope
     public function apply(Builder $builder, Model $model)
     {
         if (config('checkpoint.apply_global_scope', true)) {
-            $builder->at(); // show the latest available revisions by default
+            /** @var Checkpoint $checkpointClass */
+            $checkpointClass = config('checkpoint.models.checkpoint');
+
+            $builder->at($checkpointClass::active());
         }
     }
 
@@ -60,7 +66,7 @@ class RevisionScope implements Scope
     protected function addTemporal(Builder $builder)
     {
         // Constrain the scope to a specific window of time using valid checkpoints, carbon objects or datetime strings
-        $builder->macro('temporal', function (Builder $builder, $until = null, $since = null) {
+        $builder->macro('temporal', function (Builder $builder, $until = null, $since = null, ?Timeline $timeline = null) {
             $model = $builder->getModel();
 
             $builder->withoutGlobalScope($this);
@@ -68,13 +74,21 @@ class RevisionScope implements Scope
 
             // METHOD 2 : Join current table on revisions, filter out by original and type index, use a where in for the closest ids subquery
 
+            /** @var Revision $revision */
+            $revision = config('checkpoint.models.revision');
+
             // METHOD 3 : Uses a where exists wrapper on a where in subquery for closest ids
-            $builder->whereHas('revision', function (Builder $query) use ($model, $until, $since) {
+            $builder->whereHas('revision', function (Builder $query) use ($model, $until, $since, $timeline, $revision) {
+                $timelineId = $timeline ? $timeline->getKey() : null;
+
                 $query->whereIn($query->getModel()->getQualifiedKeyName(),
-                    $query->newModelInstance()->setTable('_r')->from($query->getModel()->getTable(), '_r')
-                        ->latestIds($until, $since)
-                        ->whereColumn($query->qualifyColumn('original_revisionable_id'), '_r.original_revisionable_id')
-                        ->whereType($model));
+                        $query->newModelInstance()
+                            ->setTable('_r')
+                            ->where($revision::TIMELINE_ID, $timelineId)
+                            ->from($query->getModel()->getTable(), '_r')
+                            ->latestIds($until, $since)
+                            ->whereColumn($query->qualifyColumn('original_revisionable_id'), '_r.original_revisionable_id')
+                            ->whereType($model));
             });
 
             return $builder;
@@ -90,7 +104,9 @@ class RevisionScope implements Scope
     protected function addAt(Builder $builder)
     {
         $builder->macro('at', function (Builder $builder, $moment = null) {
-            return $builder->temporal($moment);
+            $timeline = $moment instanceof Checkpoint ? $moment->timeline : null;
+
+            return $builder->temporal($moment, null, $timeline);
         });
     }
 
@@ -103,7 +119,9 @@ class RevisionScope implements Scope
     protected function addSince(Builder $builder)
     {
         $builder->macro('since', function (Builder $builder, $moment = null) {
-            return $builder->temporal(null, $moment);
+            $timeline = $moment instanceof Checkpoint ? $moment->timeline : null;
+
+            return $builder->temporal(null, $moment, $timeline);
         });
     }
 

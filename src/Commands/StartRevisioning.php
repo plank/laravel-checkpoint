@@ -5,7 +5,11 @@ namespace Plank\Checkpoint\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Container\Container;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\File;
+use Plank\Checkpoint\Models\Checkpoint;
+use Symfony\Component\Finder\SplFileInfo;
 
 class StartRevisioning extends Command
 {
@@ -39,14 +43,15 @@ class StartRevisioning extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return void
      */
     public function handle()
     {
         $checkpoint = null;
         if ($this->option('with-checkpoint')) {
+            /** @var Checkpoint $checkpointClass */
             $checkpointClass = config('checkpoint.models.checkpoint');
-            $checkpoint = $checkpointClass::first() ?? new $checkpointClass();
+            $checkpoint = $checkpointClass::first() ?? new $checkpointClass;
             $checkpoint->save();
             $checkpoint->refresh();
         }
@@ -55,7 +60,7 @@ class StartRevisioning extends Command
             $models = explode(',', str_replace(' ', '', $class));
         } else {
             // TODO: maybe pull base paths from composer psr-4, to support modular laravel codebases??
-            $models = collect(File::allFiles(app_path()))->map(function ($item) {
+            $models = collect(File::allFiles(app_path()))->map(function (SplFileInfo $item) {
                 $path = $item->getRelativePathName();
                 return sprintf('\%s%s', Container::getInstance()->getNamespace(),
                     str_replace('/', '\\', substr($path, 0, strrpos($path, '.'))));
@@ -64,8 +69,9 @@ class StartRevisioning extends Command
             });
         }
 
+        /** @var Model $class */
         foreach ($models as $class) {
-            $records = $class::withoutGlobalScopes()->chunk(100, function ($results) use ($checkpoint) {
+            $class::withoutGlobalScopes()->chunk(100, function (Collection $results) use ($checkpoint) {
                foreach ($results as $item) {
                    $item->startRevision();
                    $revision = $item->revision;

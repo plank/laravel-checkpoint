@@ -5,6 +5,7 @@ namespace Plank\Checkpoint\Tests;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Plank\Checkpoint\CheckpointServiceProvider;
+use Plank\Checkpoint\Models\Checkpoint;
 
 abstract class TestCase extends Orchestra
 {
@@ -17,6 +18,9 @@ abstract class TestCase extends Orchestra
         $this->withFactories(__DIR__ . '/Support/factories');
     }
 
+    /**
+     * @return void
+     */
     protected function defineDatabaseMigrations()
     {
         $this->loadMigrationsFrom(['--database' => 'sqlite']);
@@ -26,6 +30,11 @@ abstract class TestCase extends Orchestra
         ]);
     }
 
+    /**
+     * @param \Illuminate\Foundation\Application $app
+     *
+     * @return void
+     */
     protected function getEnvironmentSetUp($app)
     {
         $app['config']->set('checkpoint.enabled', true);
@@ -37,8 +46,6 @@ abstract class TestCase extends Orchestra
     }
 
     /**
-     * Get package providers.
-     *
      * @param  \Illuminate\Foundation\Application  $app
      *
      * @return array
@@ -48,5 +55,15 @@ abstract class TestCase extends Orchestra
         return [
             CheckpointServiceProvider::class
         ];
+    }
+
+    /**
+     * @return void
+     */
+    protected function tearDown(): void
+    {
+        Checkpoint::clearActive();
+
+        parent::tearDown();
     }
 }

@@ -31,10 +31,10 @@
     },
     "require-dev": {
         "laravel/legacy-factories": "^1.0.4",
-        "nunomaduro/larastan": "^0.7.8",
         "orchestra/testbench": "^4.8 || ^5.2 || ^6.0",
         "phpunit/phpunit": "^9.5",
-        "vimeo/psalm": "^4.8"
+        "psalm/plugin-laravel": "^1.4",
+        "vimeo/psalm": "^4.10"
     },
     "autoload": {
         "psr-4": {

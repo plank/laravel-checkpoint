@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <psalm
-        errorLevel="4"
-        findUnusedVariablesAndParams="true"
-        resolveFromConfigFile="true"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns="https://getpsalm.org/schema/config"
-        xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    errorLevel="4"
+    findUnusedVariablesAndParams="true"
+    resolveFromConfigFile="true"
+    useDocblockPropertyTypes="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
 >
     <projectFiles>
         <directory name="src"/>
@@ -13,4 +14,84 @@
             <directory name="vendor"/>
         </ignoreFiles>
     </projectFiles>
+
+    <issueHandlers>
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Plank\Checkpoint\Models\Checkpoint" />
+                <referencedClass name="Plank\Checkpoint\Models\Revision" />
+                <referencedClass name="Plank\Checkpoint\Models\Timeline" />
+                <referencedClass name="Plank\Checkpoint\Contracts\CheckpointStore" />
+            </errorLevel>
+        </UndefinedClass>
+        <UndefinedMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="Illuminate\Container\Container::getNamespace" />
+                <referencedMethod name="Illuminate\Config\Repository::olderthanequals" />
+            </errorLevel>
+        </UndefinedMethod>
+        <UndefinedDocblockClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Illuminate\Daratabse\Eloquent\Builder" />
+            </errorLevel>
+        </UndefinedDocblockClass>
+        <UndefinedMagicMethod>
+            <errorLevel type="suppress">
+                <referencedMethod name="Plank\Checkpoint\Models\Checkpoint::first" />
+                <referencedMethod name="Plank\Checkpoint\Models\Checkpoint::select" />
+            </errorLevel>
+        </UndefinedMagicMethod>
+        <InvalidReturnType>
+            <errorLevel type="suppress">
+                <directory name="src/Models" />
+            </errorLevel>
+        </InvalidReturnType>
+        <InvalidReturnStatement>
+            <errorLevel type="suppress">
+                <directory name="src/Models" />
+            </errorLevel>
+        </InvalidReturnStatement>
+        <PossiblyFalseArgument>
+            <errorLevel type="suppress">
+                <referencedFunction name="substr" />
+            </errorLevel>
+        </PossiblyFalseArgument>
+        <PossiblyFalseOperand>
+            <errorLevel type="suppress">
+                <file name="src/Helpers/RelationHelper.php" />
+            </errorLevel>
+        </PossiblyFalseOperand>
+        <MissingClosureReturnType>
+            <errorLevel type="suppress">
+                <directory name="src" />
+            </errorLevel>
+        </MissingClosureReturnType>
+        <MissingClosureParamType>
+            <errorLevel type="suppress">
+                <directory name="src" />
+            </errorLevel>
+        </MissingClosureParamType>
+        <PossiblyInvalidCast>
+            <errorLevel type="suppress">
+                <file name="src/Helpers/RelationHelper.php" />
+            </errorLevel>
+        </PossiblyInvalidCast>
+        <PossiblyInvalidOperand>
+            <errorLevel type="suppress">
+                <file name="src/Helpers/RelationHelper.php" />
+            </errorLevel>
+        </PossiblyInvalidOperand>
+        <ArgumentTypeCoercion>
+            <errorLevel type="suppress">
+                <referencedFunction name="Plank\Checkpoint\Models\Revision::belongsTo" />
+                <referencedFunction name="Plank\Checkpoint\Models\Timeline::hasMany" />
+                <referencedFunction name="Plank\Checkpoint\Models\Checkpoint::morphedByMany" />
+                <referencedFunction name="Plank\Checkpoint\Models\Checkpoint::hasMany" />
+            </errorLevel>
+        </ArgumentTypeCoercion>
+    </issueHandlers>
+
+    <plugins>
+        <pluginClass class="Psalm\LaravelPlugin\Plugin"/>
+    </plugins>
 </psalm>
