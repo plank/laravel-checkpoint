@@ -12,11 +12,11 @@ class BasicCheckpointStore implements CheckpointStore
      *
      * @var null|Checkpoint
      */
-    protected ?Checkpoint $checkpoint = null;
+    protected $checkpoint = null;
 
     /**
      * Store the active checkpoint for the current request
-     * 
+     *
      * @param Checkpoint $checkpoint
      * @return void
      */

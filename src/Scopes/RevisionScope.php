@@ -76,13 +76,12 @@ class RevisionScope implements Scope
 
             /** @var Revision $revision */
             $revision = config('checkpoint.models.revision');
-            
+
             // METHOD 3 : Uses a where exists wrapper on a where in subquery for closest ids
             $builder->whereHas('revision', function (Builder $query) use ($model, $until, $since, $timeline, $revision) {
                 $timelineId = $timeline ? $timeline->getKey() : null;
 
-                $query->where($revision::TIMELINE_ID, $timelineId)
-                    ->whereIn($query->getModel()->getQualifiedKeyName(),
+                $query->whereIn($query->getModel()->getQualifiedKeyName(),
                         $query->newModelInstance()
                             ->setTable('_r')
                             ->where($revision::TIMELINE_ID, $timelineId)

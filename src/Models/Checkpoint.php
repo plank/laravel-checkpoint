@@ -67,13 +67,6 @@ class Checkpoint extends Model
     public $incrementing = true;
 
     /**
-     * Set the checkpoint that is active while creating content
-     *
-     * @var self
-     */
-    public static $active;
-
-    /**
      * The name of the "updated at" column.
      *
      * @var string
