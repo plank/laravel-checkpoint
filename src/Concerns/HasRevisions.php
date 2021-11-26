@@ -229,7 +229,7 @@ trait HasRevisions
             return $value;
         }
         // dependency on latest boolean column, alternative to using max id
-        return $this->revisions()->where('latest', true)->first()->revisionable_id;
+        return $this->revisions()->where('latest', true)->first()->revisionable_id ?? null;
     }
 
 
