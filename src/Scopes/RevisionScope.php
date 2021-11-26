@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
 use Plank\Checkpoint\Contracts\CheckpointStore;
 use Plank\Checkpoint\Models\Checkpoint;
-use Plank\Checkpoint\Models\Revision;
-use Plank\Checkpoint\Models\Timeline;
 
 class RevisionScope implements Scope
 {
@@ -64,32 +62,33 @@ class RevisionScope implements Scope
     protected function addTemporal(Builder $builder)
     {
         // Constrain the scope to a specific window of time using valid checkpoints, carbon objects or datetime strings
-        $builder->macro('temporal', function (Builder $builder, $until = null, $since = null, ?Timeline $timeline = null) {
-            $model = $builder->getModel();
+        $builder->macro('temporal', function (Builder $builder, $until = null, $since = null, $timeline = null) {
+            $type = $builder->getModel();
 
             $builder->withoutGlobalScope($this);
             // METHOD 1: Join current table on revisions, join the result on closest subquery
 
             // METHOD 2 : Join current table on revisions, filter out by original and type index, use a where in for the closest ids subquery
 
-            /** @var Revision $revision */
-            $revision = config('checkpoint.models.revision');
-
             // METHOD 3 : Uses a where exists wrapper on a where in subquery for closest ids
-            $builder->whereHas('revision', function (Builder $query) use ($model, $until, $since, $timeline, $revision) {
-                $timelineId = $timeline ? $timeline->getKey() : null;
-
-                $query->whereIn($query->getModel()->getQualifiedKeyName(),
-                        $query->newModelInstance()
-                            ->setTable('_r')
-                            ->where($revision::TIMELINE_ID, $timelineId)
-                            ->from($query->getModel()->getTable(), '_r')
-                            ->latestIds($until, $since)
-                            ->whereColumn($query->qualifyColumn('original_revisionable_id'), '_r.original_revisionable_id')
-                            ->whereType($model));
+            $builder->whereHas('revision', function (\Plank\Checkpoint\Builders\RevisionBuilder $sub) use ($type, $until, $since, $timeline) {
+                $sub->closestTo($type, $until, $since, $timeline);
             });
 
             return $builder;
+        });
+    }
+
+    /**
+     * Add the at extension to the builder.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @return void
+     */
+    protected function addInTimeline(Builder $builder)
+    {
+        $builder->macro('inTimeline', function (Builder $builder, $timeline = null) {
+            return $builder->temporal(null, null, $timeline);
         });
     }
 
