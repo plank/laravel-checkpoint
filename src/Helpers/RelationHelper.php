@@ -161,11 +161,12 @@ class RelationHelper
      * Not just the eager loaded ones present in the $relations Eloquent property.
      *
      * @param Model|class-string $model
+     * @param array $except
      * @param bool $refresh
      * @return array
      * @throws ReflectionException
      */
-    public static function getModelRelations($model, bool $refresh = false): array
+    public static function getModelRelations($model, array $except = [], bool $refresh = false): array
     {
         /** @var class-string $class */
         $class = ($model instanceof Model) ? get_class($model) : $model;
@@ -174,6 +175,10 @@ class RelationHelper
         // Check if the relations on this model were already parsed
         if (!$refresh && array_key_exists($class, static::$relations)) {
             return static::$relations[$class];
+        }
+
+        if (empty($except) && method_exists($model, 'getExcludedRelations')) {
+            $except = $model->getExcludedRelations();
         }
 
         static::$relations[$class] = [];
@@ -199,7 +204,7 @@ class RelationHelper
             $code = substr($code, $begin, strrpos($code, '}') - $begin + 1);
 
             foreach (static::$relationTypes as $type) {
-                if (stripos($code, '$this->'.$type.'(')) {
+                if (stripos($code, '$this->'.$type.'(') && !in_array($method, $except, true)) {
                     $relation = $model->$method();
 
                     if ($relation instanceof Relation) {

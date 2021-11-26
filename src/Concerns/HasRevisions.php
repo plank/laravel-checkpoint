@@ -394,9 +394,7 @@ trait HasRevisions
     protected function replicateRelationsTo(Model $copy)
     {
         $relationHelper = resolve(RelationHelper::class);
-
-        $excluded = $this->getExcludedRelations();
-        $relations = collect($relationHelper::getModelRelations($this))->map->type->except($excluded);
+        $relations = collect($relationHelper::getModelRelations($this))->map->type;
 
         foreach ($relations as $relation => $type) {
             $shortType = substr($type, strrpos($type, '\\') + 1);
