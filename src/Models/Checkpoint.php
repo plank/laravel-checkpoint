@@ -127,14 +127,7 @@ class Checkpoint extends Model
      */
     public static function getStore(): CheckpointStore
     {
-        if (static::$store === null) {
-            /** @var class-string<CheckpointStore> $storeClass */
-            $storeClass = config('checkpoint.store');
-
-            static::$store = new $storeClass;
-        }
-
-        return static::$store;
+        return app(CheckpointStore::class);
     }
 
     /**

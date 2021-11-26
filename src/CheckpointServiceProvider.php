@@ -5,6 +5,7 @@ namespace Plank\Checkpoint;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Plank\Checkpoint\Commands\StartRevisioning;
+use Plank\Checkpoint\Contracts\CheckpointStore;
 
 class CheckpointServiceProvider extends ServiceProvider
 {
@@ -60,6 +61,8 @@ class CheckpointServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/checkpoint.php', 'checkpoint');
 
         $this->registerModels();
+
+        $this->registerCheckpointStore();
     }
 
     /**
@@ -75,5 +78,17 @@ class CheckpointServiceProvider extends ServiceProvider
                 return new $config[$key];
             });
         }
+    }
+
+    /**
+     * Register a concrete implementation of a CheckpointStore
+     */
+    public function registerCheckpointStore()
+    {
+        $this->app->singleton(CheckpointStore::class, function () {
+            /** @var class-string<CheckpointStore> $storeClass */
+            $storeClass = config('checkpoint.store');
+            return new $storeClass;
+        });
     }
 }
