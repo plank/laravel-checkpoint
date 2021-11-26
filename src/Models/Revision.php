@@ -144,9 +144,19 @@ class Revision extends MorphPivot
      *
      * @return string
      */
-    public function getCheckpointIdColumn()
+    public function getCheckpointKeyName()
     {
         return static::CHECKPOINT_ID;
+    }
+
+    /**
+     * Get the name of the "timeline id" column.
+     *
+     * @return string
+     */
+    public function getTimelineKeyName()
+    {
+        return static::TIMELINE_ID;
     }
 
     /**
@@ -184,16 +194,23 @@ class Revision extends MorphPivot
     }
 
     /**
+     * Return the associated timeline to this revision - should match the on checkpoint, if set
+     *
+     * @return BelongsTo
+     */
+    public function timeline(): BelongsTo
+    {
+        return $this->belongsTo(get_class(app(Timeline::class)), $this->getTimelineKeyName());
+    }
+
+    /**
      * Return the associated checkpoint/release to this revision
      *
      * @return BelongsTo
      */
     public function checkpoint(): BelongsTo
     {
-        /** @var string $checkpointClass */
-        $checkpointClass = config('checkpoint.models.checkpoint');
-
-        return $this->belongsTo($checkpointClass, $this->getCheckpointIdColumn());
+        return $this->belongsTo(get_class(app(Checkpoint::class)), $this->getCheckpointKeyName());
     }
 
     /**

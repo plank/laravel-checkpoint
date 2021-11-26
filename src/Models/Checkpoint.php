@@ -169,17 +169,25 @@ class Checkpoint extends Model
     }
 
     /**
-     * Get the timeline the checkpoint belongs to
+     * Get the name of the "timeline id" column.
      *
-     * @return BelongsTo
+     * @return string
      */
-    public function timeline(): BelongsTo
+    public function getTimelineKeyName()
     {
-        /** @var class-string<Timeline> $timelineModel */
-        $timelineModel = config('checkpoint.models.timeline');
-
-        return $this->belongsTo($timelineModel, static::TIMELINE_ID);
+        return static::TIMELINE_ID;
     }
+
+    /**
+     * Get the "timeline" key.
+     *
+     * @return \Illuminate\Support\Carbon|string
+     */
+    public function getTimelineKey()
+    {
+        return $this->{$this->getTimelineKeyName()};
+    }
+
 
     /**
      * Get the name of the "checkpoint date" column.
@@ -232,16 +240,23 @@ class Checkpoint extends Model
     }
 
     /**
+     * Get the timeline the checkpoint belongs to
+     *
+     * @return BelongsTo
+     */
+    public function timeline(): BelongsTo
+    {
+        return $this->belongsTo(get_class(app(Timeline::class)), $this->getTimelineKeyName());
+    }
+
+    /**
      * Retrieve all revision intermediaries associated with this checkpoint
      *
      * @return HasMany
      */
     public function revisions(): HasMany
     {
-        /** @var Revision|string $revisionClass */
-        $revisionClass = config('checkpoint.models.revision');
-
-        return $this->hasMany($revisionClass, $revisionClass::CHECKPOINT_ID);
+        return $this->hasMany(get_class(app(Revision::class)), app(Revision::class)->getCheckpointKeyName());
     }
 
     /**
@@ -253,12 +268,9 @@ class Checkpoint extends Model
      */
     public function modelsOf(string $type): MorphToMany
     {
-        /** @var string $revisionClass */
-        $revisionClass = config('checkpoint.models.revision');
-
         return $this->morphedByMany($type, 'revisionable', 'revisions', 'checkpoint_id')
             ->withPivot('metadata', 'previous_revision_id', 'original_revisionable_id')->withTimestamps()
-            ->using($revisionClass);
+            ->using(get_class(app(Revision::class)));
     }
 
     /**
