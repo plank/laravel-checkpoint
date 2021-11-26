@@ -313,20 +313,19 @@ class Revision extends MorphPivot
         $q->withoutGlobalScopes()->selectRaw("max({$this->getKeyName()})")
             ->groupBy(['original_revisionable_id', 'revisionable_type'])->orderByDesc('previous_revision_id');
 
-        /** @var Checkpoint $checkpointClass */
-        $checkpointClass = config('checkpoint.models.checkpoint');
-        $keyname = $checkpointClass::getModel()->getKeyName();
+        $checkpoint = app(Checkpoint::class);
+        $keyname = $checkpoint->getKeyName();
 
-        if ($until instanceof $checkpointClass) {
+        if ($until instanceof $checkpoint) {
             // where in given checkpoint or one of the previous ones
-            $q->whereIn($this->getCheckpointIdColumn(), $checkpointClass::olderThanEquals($until)->select($keyname));
+            $q->whereIn($this->getCheckpointKeyName(), $checkpoint->olderThanEquals($until)->select($keyname));
         } elseif ($until !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '<=', $until);
         }
 
-        if ($since instanceof $checkpointClass) {
+        if ($since instanceof $checkpoint) {
             // where in one of the newer checkpoints than given
-            $q->whereIn($this->getCheckpointIdColumn(), $checkpointClass::newerThan($since)->select($keyname));
+            $q->whereIn($this->getCheckpointKeyName(), $checkpoint->newerThan($since)->select($keyname));
         } elseif ($since !== null) {
             $q->where($this->getQualifiedCreatedAtColumn(), '>', $since);
         }

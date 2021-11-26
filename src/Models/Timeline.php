@@ -18,8 +18,10 @@ class Timeline extends Model
      */
     public function checkpoints(): HasMany
     {
-        $checkpoint = app(Checkpoint::class);
-        return $this->hasMany(get_class(app(Checkpoint::class)), $checkpoint->getTimelineKeyName());
+        return $this->hasMany(
+            get_class(app(Checkpoint::class)),
+            app(Checkpoint::class)->getTimelineKeyName()
+        );
     }
 
     /**
@@ -29,7 +31,9 @@ class Timeline extends Model
      */
     public function revisions(): HasMany
     {
-        $revision = app(Revision::class);
-        return $this->hasMany(get_class($revision), $revision->getTimelineKeyName());
+        return $this->hasMany(
+            get_class(app(Revision::class)),
+            app(Revision::class)->getTimelineKeyName()
+        );
     }
 }
