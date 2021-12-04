@@ -1,7 +1,7 @@
 # Laravel Checkpoint 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/laravel-checkpoint)
-[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/plank/laravel-checkpoint/tests?label=tests)](https://github.com/plank/laravel-checkpoint/actions?query=workflow%3Atests+branch%3Amaster)
+[![GitHub Tests Action Status](https://github.com/plank/laravel-checkpoint/actions/workflows/tests.yml/badge.svg)](https://github.com/plank/laravel-checkpoint/actions?query=workflow%3Atests+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/laravel-checkpoint)
 
 ## Table of Contents
