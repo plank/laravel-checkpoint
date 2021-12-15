@@ -15,15 +15,10 @@ class CheckpointObserver
      */
     public function updated(Checkpoint $checkpoint)
     {
-        /** @var Checkpoint $revision */
-        $checkpointClass = config('checkpoint.models.checkpoint');
-
-        if ($checkpoint->isDirty($checkpointClass::TIMELINE_ID)) {
-            /** @var Revision $revision */
-            $revision = config('checkpoint.models.revision');
+        if ($checkpoint->isDirty($checkpoint->getTimelineKeyName())) {
 
             $checkpoint->revisions()->update([
-                $revision::TIMELINE_ID => $checkpoint->{$checkpointClass::TIMELINE_ID}
+                app(Revision::class)->getTimelineKeyName() => $checkpoint->getTimelineKey()
             ]);
 
             // Ensure the model has the proper timeline loaded
@@ -43,12 +38,11 @@ class CheckpointObserver
         /** @var Checkpoint $checkpointClass */
         $checkpointClass = config('checkpoint.models.checkpoint');
 
-        /** @var Revision $revision */
-        $revision = config('checkpoint.models.revision');
+        $revision = app(Revision::class);
 
         $checkpoint->revisions()->update([
-            $revision::CHECKPOINT_ID => null,
-            $revision::TIMELINE_ID => null
+            $revision->getCheckpointKeyName() => null,
+            $revision->getTimelineKeyName() => null,
         ]);
 
         $active = $checkpointClass::active();

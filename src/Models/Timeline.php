@@ -18,9 +18,22 @@ class Timeline extends Model
      */
     public function checkpoints(): HasMany
     {
-        /** @var Checkpoint|string $checkpointClass */
-        $checkpointClass = config('checkpoint.models.checkpoint');
+        return $this->hasMany(
+            get_class(app(Checkpoint::class)),
+            app(Checkpoint::class)->getTimelineKeyName()
+        );
+    }
 
-        return $this->hasMany($checkpointClass, $checkpointClass::TIMELINE_ID);
+    /**
+     * Get all checkpoints associated with the Timeline
+     *
+     * @return HasMany
+     */
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(
+            get_class(app(Revision::class)),
+            app(Revision::class)->getTimelineKeyName()
+        );
     }
 }

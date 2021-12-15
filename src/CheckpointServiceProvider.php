@@ -8,6 +8,12 @@ use Plank\Checkpoint\Commands\StartRevisioning;
 
 class CheckpointServiceProvider extends ServiceProvider
 {
+    protected $models = [
+        \Plank\Checkpoint\Models\Revision::class,
+        \Plank\Checkpoint\Models\Checkpoint::class,
+        \Plank\Checkpoint\Models\Timeline::class,
+    ];
+
     /**
      * Bootstrap the application services.
      */
@@ -52,5 +58,22 @@ class CheckpointServiceProvider extends ServiceProvider
     {
         // Automatically apply the package configuration
         $this->mergeConfigFrom(__DIR__.'/../config/checkpoint.php', 'checkpoint');
+
+        $this->registerModels();
+    }
+
+    /**
+     * Bind user-defined models from config to corresponding package models
+     */
+    public function registerModels()
+    {
+        $config = config('checkpoint.models');
+
+        foreach ($this->models as $model) {
+            $key = lcfirst(substr($model, strrpos($model, '\\') + 1));
+            $this->app->bind($model, function () use ($config, $key) {
+                return new $config[$key];
+            });
+        }
     }
 }

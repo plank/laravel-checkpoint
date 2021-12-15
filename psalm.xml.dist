@@ -39,6 +39,8 @@
             <errorLevel type="suppress">
                 <referencedMethod name="Plank\Checkpoint\Models\Checkpoint::first" />
                 <referencedMethod name="Plank\Checkpoint\Models\Checkpoint::select" />
+                <referencedMethod name="Plank\Checkpoint\Models\Checkpoint::olderThanEquals" />
+                <referencedMethod name="Plank\Checkpoint\Models\Checkpoint::newerThan" />
             </errorLevel>
         </UndefinedMagicMethod>
         <InvalidReturnType>
@@ -59,6 +61,7 @@
         <PossiblyFalseOperand>
             <errorLevel type="suppress">
                 <file name="src/Helpers/RelationHelper.php" />
+                <file name="src/CheckpointServiceProvider.php" />
             </errorLevel>
         </PossiblyFalseOperand>
         <MissingClosureReturnType>
