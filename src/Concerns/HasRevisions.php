@@ -228,8 +228,8 @@ trait HasRevisions
         if ($value !== null || array_key_exists('newest_id', $this->attributes)) {
             return $value;
         }
-        // dependency on latest boolean column, alternative to using max id
-        return $this->revisions()->where('latest', true)->first()->revisionable_id ?? null;
+        // when value isn't set by extra subselect scope, fetch from relations
+        return $this->revision->newest->revisionable_id ?? null;
     }
 
 

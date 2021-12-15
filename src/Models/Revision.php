@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
  * @property-read int|null $all_revisions_count
  * @property-read \Illuminate\Database\Eloquent\Collection|Revision[] $otherRevisions
  * @property-read int|null $other_revisions_count
+ * @property-read Revision|null $newest
  * @property-read Revision|null $next
  * @property-read Revision|null $previous
  * @property-read Checkpoint|null $checkpoint
@@ -214,6 +215,18 @@ class Revision extends MorphPivot
     public function next(): HasOne
     {
         return $this->hasOne(static::class, 'previous_revision_id', $this->getKeyName());
+    }
+
+    /**
+     * Return latest revision
+     *
+     * @return HasOne
+     */
+    public function newest(): HasOne
+    {
+        return $this->hasOne(static::class, 'revisionable_type', 'revisionable_type')
+            ->where('original_revisionable_id', $this->original_revisionable_id)
+            ->where('latest', true)->latest();
     }
 
     /**
