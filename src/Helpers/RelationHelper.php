@@ -177,8 +177,8 @@ class RelationHelper
             return static::$relations[$class];
         }
 
-        if (empty($except) && method_exists($model, 'getExcludedRelations')) {
-            $except = $model->getExcludedRelations();
+        if (method_exists($model, 'getExcludedRelations')) {
+            $except = array_merge($except, $model->getExcludedRelations());
         }
 
         static::$relations[$class] = [];
