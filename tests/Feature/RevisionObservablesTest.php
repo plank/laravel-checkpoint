@@ -141,8 +141,14 @@ class RevisionObservablesTest extends TestCase
         $r1->refresh();
         $this->assertEquals(0, $r1->next()->count());
         $this->assertNull($r1->previous_revision_id);
-        $this->assertCount(1, Post::withoutRevisions()->get());
+        $posts = Post::withoutRevisions()->get();
+        $this->assertCount(1, $posts);
         $this->assertCount(1, Revision::all());
+        $post = $posts->first();
+        $post->forceDelete();
+        $this->assertCount(0, $r1->otherRevisions()->get());
+        $this->assertNull(null, $post->newest()->get());
+        $this->assertCount(0, Post::withoutRevisions()->get());
     }
 
     /**

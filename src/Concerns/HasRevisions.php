@@ -247,8 +247,8 @@ trait HasRevisions
         if ($value !== null || array_key_exists('newest_id', $this->attributes)) {
             return $value;
         }
-        // dependency on latest boolean column, alternative to using max id
-        return $this->revisions()->where('latest', true)->first()->revisionable_id;
+        // when value isn't set by extra subselect scope, fetch from relations
+        return $this->revision->newest->revisionable_id ?? null;
     }
 
 
@@ -413,9 +413,7 @@ trait HasRevisions
     protected function replicateRelationsTo(Model $copy)
     {
         $relationHelper = resolve(RelationHelper::class);
-
-        $excluded = $this->getExcludedRelations();
-        $relations = collect($relationHelper::getModelRelations($this))->map->type->except($excluded);
+        $relations = collect($relationHelper::getModelRelations($this))->map->type;
 
         foreach ($relations as $relation => $type) {
             $shortType = substr($type, strrpos($type, '\\') + 1);
