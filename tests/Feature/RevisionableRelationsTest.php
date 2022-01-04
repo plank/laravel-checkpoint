@@ -94,6 +94,27 @@ class RevisionableRelationsTest extends TestCase
     /**
      * @test
      */
+    public function retrieve_newest_revisionable(): void
+    {
+        $post = factory(Post::class)->create();
+        $revision1 = $post->revision;
+        $original = clone $post;
+
+        $original_newest_id = $original->newest()->first()->id;
+        $this->assertEquals($post->id, $original_newest_id);
+
+        $post->performRevision();
+        $revision2 = $post->revision;
+        $this->assertEquals($post->id, Post::withNewest()->find($post->id)->newest->id);
+        $this->assertNotEquals($original_newest_id, Post::withNewest()->find($post->id)->newest->id);
+
+        $this->assertEquals($original->id, $revision1->revisionable_id);
+        $this->assertEquals($post->id, $revision2->revisionable_id);
+    }
+
+    /**
+     * @test
+     */
     public function retrieve_all_revisions_from_revisionable(): void
     {
         $post = factory(Post::class)->create();

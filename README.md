@@ -1,7 +1,7 @@
 # Laravel Checkpoint 
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/laravel-checkpoint)
-[![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/plank/laravel-checkpoint/tests?label=tests)](https://github.com/plank/laravel-checkpoint/actions?query=workflow%3Atests+branch%3Amaster)
+[![GitHub Tests Action Status](https://github.com/plank/laravel-checkpoint/actions/workflows/tests.yml/badge.svg)](https://github.com/plank/laravel-checkpoint/actions?query=workflow%3Atests+branch%3Amaster)
 [![Total Downloads](https://img.shields.io/packagist/dt/plank/laravel-checkpoint.svg?style=flat-square)](https://packagist.org/packages/plank/laravel-checkpoint)
 
 ## Table of Contents
@@ -170,6 +170,43 @@ withoutRevisions()
 ```
 
 This query scope is used to query the models without taking revisioning into consideration.
+
+### Dynamic Relationships
+
+Inspired by https://reinink.ca/articles/dynamic-relationships-in-laravel-using-subqueries, this package supplies a few
+dynamic relationships as a convenience for navigating through a model's revision history. The following scopes will run
+subqueries to get the additional columns and eagerload the corresponding relations, saving you the hassle of caching 
+them on each of the tables for your revisionable models. As a fallback when these scopes are not applied, we use get 
+mutators to run queries and fetch the same columns, making sure the relations are always available but at the expense 
+of running a bit more queries. *NOTE: when applying these scopes, you will have extra columns in your models attributes, 
+**any update or insert operations will not work.***
+
+#### withNewestAt($until, $since)
+```php
+/**
+ * @param $until Checkpoint|Carbon|string
+ * @param $since Checkpoint|Carbon|string
+ */
+withNewestAt($until = null, $since = null)
+```
+This scope will retrieve the id of the newest model given the until / since constraints. Stored in the newest_id
+attribute, this allows you to use `->newest()` relation as a quick way to navigate to that model. Defaults to the 
+newest model in the revision history.
+
+#### withNewest()
+This scope is a shortcut of `withNewestAt` with the default parameters. Uses the same attribute, mutator and relation.
+
+#### withInitial()
+This scope will retrieve the id of the initial model from its revision history. Stored in the initial_id attribute, 
+this allows you to use `->initial()` relation as a quick way to navigate to that first item in the revision history. 
+
+#### withPrevious()
+This scope will retrieve the id of the previous model from its revision history. Stored in the previous_id attribute, 
+this allows you to use `->previous()` relation as a quick way to navigate to that previous item in the revision history. 
+
+#### withNext()
+This scope will retrieve the id of the next model from its revision history. Stored in the next_id attribute, 
+this allows you to use `->next()` relation as a quick way to navigate to that next item in the revision history. 
 
 ### Revision Metadata & Uniqueness
 As a workaround to some package compatibility issues, this package offers a convenient way to store the values of some

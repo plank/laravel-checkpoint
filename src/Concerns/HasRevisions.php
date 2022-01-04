@@ -147,20 +147,39 @@ trait HasRevisions
     }
 
     /**
-     * Get the id of the initial revisioned item
+     * Get the id of the most recent revisioned item
      *
+     * @param Builder|self $builder
      * @return mixed
      */
     public function scopeWithNewestAt($builder, $until = null, $since = null)
     {
+        /**
+         * @var Revision $revision
+         */
         $revision = config('checkpoint.models.revision');
-        return $builder->withInitial()->addSelect([
-            'newest_id' => $revision::select('revisionable_id')
-                ->whereIn('id', $revision::latestIds($until, $since)
-                    ->whereColumn('original_revisionable_id', 'initial_id')
-                    ->where('revisionable_type', get_class($this))
-                )
-        ])->with('newest');
+
+        $newestIdQuery = $revision::select('revisionable_id')
+            ->whereColumn('original_revisionable_id', 'initial_id')
+            ->whereType($this)
+            ->whereIn((new $revision)->getKeyName(), $revision::latestIds($until, $since)
+                ->whereColumn('original_revisionable_id', 'initial_id')
+                ->whereType($this)
+            );
+
+        // The SQL Standard does not allow referencing aliases in the SELECT clause,
+        // Postgres and SQLite follow this convention, mysql does not. When the
+        // driver is mysql, prefer 2 SELECT sub-queries over a nested FROM sub-query
+        // TODO: confirm this works on other db drivers (postgres, mssql, mongo?)
+        if($builder->getConnection()->getDriverName() === 'mysql') {
+            $withNewest = $builder->withInitial()->addSelect(['newest_id' => $newestIdQuery]);
+        } else {
+            $model = $builder->getModel();
+            $withNewest = $model->newQueryWithoutScopes()
+                ->addSelect(['newest_id' => $newestIdQuery])
+                ->from($builder->withInitial(), $model->getTable());
+        }
+        return $withNewest->with('newest', 'initial');
     }
 
     /**
@@ -228,8 +247,8 @@ trait HasRevisions
         if ($value !== null || array_key_exists('newest_id', $this->attributes)) {
             return $value;
         }
-        // dependency on latest boolean column, alternative to using max id
-        return $this->revisions()->where('latest', true)->first()->revisionable_id;
+        // when value isn't set by extra subselect scope, fetch from relations
+        return $this->revision->newest->revisionable_id ?? null;
     }
 
 
@@ -394,9 +413,7 @@ trait HasRevisions
     protected function replicateRelationsTo(Model $copy)
     {
         $relationHelper = resolve(RelationHelper::class);
-
-        $excluded = $this->getExcludedRelations();
-        $relations = collect($relationHelper::getModelRelations($this))->map->type->except($excluded);
+        $relations = collect($relationHelper::getModelRelations($this))->map->type;
 
         foreach ($relations as $relation => $type) {
             $shortType = substr($type, strrpos($type, '\\') + 1);

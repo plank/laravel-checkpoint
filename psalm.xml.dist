@@ -32,7 +32,7 @@
         </UndefinedMethod>
         <UndefinedDocblockClass>
             <errorLevel type="suppress">
-                <referencedClass name="Illuminate\Daratabse\Eloquent\Builder" />
+                <referencedClass name="Illuminate\Database\Eloquent\Builder" />
             </errorLevel>
         </UndefinedDocblockClass>
         <UndefinedMagicMethod>
@@ -64,6 +64,11 @@
                 <file name="src/CheckpointServiceProvider.php" />
             </errorLevel>
         </PossiblyFalseOperand>
+        <InvalidScalarArgument>
+            <errorLevel type="suppress">
+                <file name="src/CheckpointServiceProvider.php" />
+            </errorLevel>
+        </InvalidScalarArgument>
         <MissingClosureReturnType>
             <errorLevel type="suppress">
                 <directory name="src" />
