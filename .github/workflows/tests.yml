@@ -73,7 +73,7 @@ jobs:
         if: ${{ contains(matrix.laravel, '9') }}
 
       - name: Install other dependencies
-          composer install --${{ matrix.stability }} --no-interaction
+        run: composer install --${{ matrix.stability }} --no-interaction
 
       - name: Install Legacy Factories Package
         run: composer require "laravel/legacy-factories" --no-interaction --no-update
