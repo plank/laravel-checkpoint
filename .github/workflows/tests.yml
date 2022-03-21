@@ -65,10 +65,15 @@ jobs:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-stability-${{ matrix.stability }}-composer-${{ hashFiles('composer.json') }}
 
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --no-interaction
+      - name: Install framework and testbench
+        run: composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+
+      - name: Require correct psalm plugins
+        run: composer require "vimeo/psalm:^4.22" "psalm/plugin-laravel:^1.5.3" --no-interaction --no-update
+        if: ${{ contains(matrix.laravel, '9') }}
+
+      - name: Install other dependencies
+          composer install --${{ matrix.stability }} --no-interaction
 
       - name: Install Legacy Factories Package
         run: composer require "laravel/legacy-factories" --no-interaction --no-update
