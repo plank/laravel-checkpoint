@@ -68,10 +68,6 @@ jobs:
       - name: Install framework and testbench
         run: composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
 
-      - name: Require correct psalm plugins
-        run: composer require "vimeo/psalm:^4.22" "psalm/plugin-laravel:^1.5.3" --dev --no-interaction --no-update
-        if: ${{ contains(matrix.laravel, '9') }}
-
       - name: Install other dependencies
         run: composer update --${{ matrix.stability }} --no-interaction
 
