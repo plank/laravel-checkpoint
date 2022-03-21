@@ -2,6 +2,7 @@
 
 namespace Plank\Checkpoint\Observers;
 
+use Plank\Checkpoint\Contracts\CheckpointStore;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 
@@ -35,8 +36,6 @@ class CheckpointObserver
      */
     public function deleting(Checkpoint $checkpoint)
     {
-        /** @var Checkpoint $checkpointClass */
-        $checkpointClass = config('checkpoint.models.checkpoint');
 
         $revision = app(Revision::class);
 
@@ -45,9 +44,9 @@ class CheckpointObserver
             $revision->getTimelineKeyName() => null,
         ]);
 
-        $active = $checkpointClass::active();
+        $active = app(CheckpointStore::class)->retrieve();
         if ($active && $active->getKey() === $checkpoint->getKey()) {
-            $checkpointClass::clearActive();
+            app(CheckpointStore::class)->clear();
         }
     }
 }

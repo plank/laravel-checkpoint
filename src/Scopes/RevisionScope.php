@@ -5,6 +5,7 @@ namespace Plank\Checkpoint\Scopes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;
+use Plank\Checkpoint\Contracts\CheckpointStore;
 use Plank\Checkpoint\Models\Checkpoint;
 use Plank\Checkpoint\Models\Revision;
 use Plank\Checkpoint\Models\Timeline;
@@ -33,10 +34,7 @@ class RevisionScope implements Scope
     public function apply(Builder $builder, Model $model)
     {
         if (config('checkpoint.apply_global_scope', true)) {
-            /** @var Checkpoint $checkpointClass */
-            $checkpointClass = config('checkpoint.models.checkpoint');
-
-            $builder->at($checkpointClass::active());
+            $builder->at(app(CheckpointStore::class)->retrieve());
         }
     }
 
