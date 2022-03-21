@@ -30,7 +30,7 @@
         "illuminate/support": "5.8.*|^6.0|^7.0|^8.0|^9.0"
     },
     "require-dev": {
-        "doctrine/dbal": "^3.3",
+        "doctrine/dbal": "^2.6|^3.3",
         "laravel/legacy-factories": "^1.0.4",
         "orchestra/testbench": "^4.8 || ^5.2 || ^6.0 || ^7.2",
         "phpunit/phpunit": "^9.5"
