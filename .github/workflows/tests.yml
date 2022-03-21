@@ -19,10 +19,30 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        php: [7.4, 8.0]
-        laravel: [6.*, 7.*, 8.*]
+        php: [7.4, 8.0, 8.1]
+        dbal: [^2.6, ^3.3]
+        laravel: [6.*, 7.*, 8.*, 9.*]
         stability: [prefer-stable]
+        exclude:
+          - laravel: 9.*
+            php: 7.4
+          - laravel: 9.*
+            dbal: ^2.6
+          - laravel: 8.*
+            php: 8.1
+          - laravel: 8.*
+            dbal: ^2.6
+          - laravel: 7.*
+            php: 8.1
+          - laravel: 7.*
+            dbal: ^3.3
+          - laravel: 6.*
+            php: 8.1
+          - laravel: 6.*
+            dbal: ^3.3
         include:
+          - laravel: 9.*
+            testbench: 7.*
           - laravel: 8.*
             testbench: 6.*
           - laravel: 7.*
@@ -54,10 +74,11 @@ jobs:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-laravel-${{ matrix.laravel }}-stability-${{ matrix.stability }}-composer-${{ hashFiles('composer.json') }}
 
-      - name: Install dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --${{ matrix.stability }} --no-interaction
+      - name: Install framework and testbench
+        run: composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "doctrine/dbal:${{ matrix.dbal }}" --no-interaction --no-update
+
+      - name: Install other dependencies
+        run: composer update --${{ matrix.stability }} --no-interaction
 
       - name: Install Legacy Factories Package
         run: composer require "laravel/legacy-factories" --no-interaction --no-update
